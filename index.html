@@ -1,0 +1,2914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Magnetic Levitation Physics Lab</title>
+  <style>
+    /* =========================================================================
+       DESIGN TOKENS & RESET — Dark Workshop / Precision Lab Aesthetic
+       Zero external dependencies; mobile-first cockpit layout (412px+ & desktop)
+       ========================================================================= */
+    :root {
+      --bg-page: #080d18;
+      --bg-panel: #0f172a;
+      --bg-panel-hi: #162238;
+      --bg-inset: #09101d;
+      --border: rgba(148, 163, 184, 0.18);
+      --border-hi: rgba(148, 163, 184, 0.34);
+
+      --text-main: #f8fafc;
+      --text-sub: #cbd5e1;
+      --text-muted: #8b9bb4;
+
+      --cyan: #38bdf8;
+      --cyan-bg: rgba(56, 189, 248, 0.14);
+      --emerald: #34d399;
+      --emerald-bg: rgba(52, 211, 153, 0.14);
+      --amber: #fbbf24;
+      --amber-bg: rgba(251, 191, 36, 0.15);
+      --orange: #fb923c;
+      --orange-bg: rgba(251, 146, 60, 0.16);
+      --rose: #fb7185;
+      --rose-bg: rgba(251, 113, 133, 0.16);
+      --violet: #a78bfa;
+      --violet-bg: rgba(167, 139, 250, 0.16);
+
+      --r-lg: 16px;
+      --r-md: 11px;
+      --r-sm: 7px;
+      --r-pill: 999px;
+
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      background-color: var(--bg-page);
+      background-image:
+        radial-gradient(circle at 20% 0%, rgba(56, 189, 248, 0.08), transparent 42%),
+        radial-gradient(circle at 80% 10%, rgba(167, 139, 250, 0.07), transparent 40%);
+      color: var(--text-main);
+      font-family: var(--font);
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* =========================================================================
+       APP CONTAINER & COMPACT HEADER
+       ========================================================================= */
+    .app-wrap {
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 8px 6px 28px;
+    }
+
+    @media (min-width: 640px) {
+      .app-wrap {
+        padding: 14px 18px 36px;
+      }
+    }
+
+    .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .title-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--cyan);
+      background: var(--cyan-bg);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 7px;
+      border-radius: var(--r-pill);
+      flex-shrink: 0;
+    }
+
+    .title-bar h1 {
+      font-size: clamp(0.98rem, 3.8vw, 1.32rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .drag-hint-top {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      display: none;
+    }
+
+    @media (min-width: 520px) {
+      .drag-hint-top {
+        display: inline;
+      }
+    }
+
+    /* =========================================================================
+       COCKPIT SHELL — ALL CONTROLS TIGHTLY AROUND THE CANVAS PICTURE
+       ========================================================================= */
+    .cockpit {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 1. TOP STRIP (Toggles + Quick Actions) */
+    .cockpit-top {
+      background: linear-gradient(180deg, #162238 0%, #111b2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    @media (min-width: 640px) {
+      .cockpit-top {
+        padding: 9px 12px;
+        gap: 8px;
+      }
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .seg-group {
+      display: inline-flex;
+      background: var(--bg-inset);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 2px;
+      gap: 2px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .seg-btn {
+      flex: 1 1 0;
+      min-height: 30px;
+      padding: 4px 5px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.71rem;
+      font-weight: 700;
+      line-height: 1.1;
+      cursor: pointer;
+      white-space: nowrap;
+      text-align: center;
+      transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    @media (min-width: 640px) {
+      .seg-btn {
+        min-height: 33px;
+        padding: 5px 10px;
+        font-size: 0.78rem;
+      }
+    }
+
+    .seg-btn:hover {
+      color: var(--text-main);
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .seg-btn.active {
+      background: linear-gradient(180deg, #1e3a5f 0%, #172d4d 100%);
+      color: #ffffff;
+      border-color: rgba(56, 189, 248, 0.52);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+
+    .seg-btn.active-em {
+      background: linear-gradient(180deg, #7c2d12 0%, #5c1f0c 100%);
+      color: #ffedd5;
+      border-color: rgba(251, 146, 60, 0.6);
+    }
+
+    /* Quick Action Buttons in Top Strip */
+    .action-strip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: 1 1 auto;
+      justify-content: flex-end;
+    }
+
+    .act-btn {
+      min-height: 32px;
+      padding: 4px 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border-hi);
+      background: rgba(30, 41, 59, 0.85);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+      flex: 1 1 auto;
+    }
+
+    @media (min-width: 640px) {
+      .act-btn {
+        min-height: 34px;
+        padding: 5px 12px;
+        font-size: 0.78rem;
+        flex: 0 1 auto;
+      }
+    }
+
+    .act-btn:active {
+      transform: scale(0.96);
+    }
+
+    .act-btn.primary {
+      background: linear-gradient(135deg, #d97706, #ea580c);
+      border-color: rgba(251, 191, 36, 0.55);
+      color: #ffffff;
+    }
+
+    .act-btn.nudge {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: rgba(56, 189, 248, 0.55);
+      color: #ffffff;
+    }
+
+    .act-btn.pid-on {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(52, 211, 153, 0.6);
+      color: #6ee7b7;
+    }
+
+    .act-btn.pid-off {
+      background: rgba(244, 63, 94, 0.18);
+      border-color: rgba(251, 113, 133, 0.6);
+      color: #fecdd3;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* 2. MIDDLE ROW: LEFT RAIL + CANVAS + RIGHT RAIL */
+    .cockpit-mid {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) 52px;
+      align-items: stretch;
+      background: #070c16;
+    }
+
+    @media (min-width: 640px) {
+      .cockpit-mid {
+        grid-template-columns: 74px minmax(0, 1fr) 74px;
+      }
+    }
+
+    /* Vertical Slider Rails (Left = Ball Weight, Right = Gap/Height) */
+    .v-rail {
+      background: linear-gradient(180deg, #111b2e 0%, #0d1526 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 3px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .v-rail.left {
+      border-right: 1px solid var(--border);
+    }
+
+    .v-rail.right {
+      border-left: 1px solid var(--border);
+    }
+
+    .rail-head {
+      text-align: center;
+      width: 100%;
+    }
+
+    .rail-title {
+      font-size: 0.58rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      line-height: 1.1;
+    }
+
+    @media (min-width: 640px) {
+      .rail-title {
+        font-size: 0.66rem;
+      }
+    }
+
+    .rail-val {
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-top: 2px;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (min-width: 640px) {
+      .rail-val {
+        font-size: 0.9rem;
+      }
+    }
+
+    .rail-val.weight-color { color: var(--amber); }
+    .rail-val.gap-color { color: var(--cyan); }
+
+    /* Custom Touch-Friendly Vertical Slider Track */
+    .v-slider-hit {
+      position: relative;
+      flex: 1 1 auto;
+      width: 44px;
+      min-height: 190px;
+      margin: 8px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      cursor: ns-resize;
+      outline: none;
+    }
+
+    .v-slider-hit:focus-visible .v-thumb {
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.55);
+    }
+
+    .v-track {
+      position: relative;
+      width: 8px;
+      height: 100%;
+      border-radius: var(--r-pill);
+      background: #1e293b;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      overflow: hidden;
+    }
+
+    .v-fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 50%;
+      border-radius: var(--r-pill);
+    }
+
+    .v-fill.weight-fill {
+      background: linear-gradient(0deg, #d97706 0%, #fbbf24 100%);
+    }
+
+    .v-fill.gap-fill {
+      background: linear-gradient(0deg, #0284c7 0%, #38bdf8 100%);
+    }
+
+    .v-thumb {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      width: 24px;
+      height: 24px;
+      transform: translate(-50%, 50%);
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 3px solid #0f172a;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.25);
+      pointer-events: none;
+      transition: transform 0.08s ease;
+    }
+
+    .v-slider-hit.dragging .v-thumb {
+      transform: translate(-50%, 50%) scale(1.16);
+    }
+
+    .v-thumb.weight-thumb { background: #fbbf24; }
+    .v-thumb.gap-thumb { background: #38bdf8; }
+
+    .rail-foot {
+      text-align: center;
+      width: 100%;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      line-height: 1.15;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (min-width: 640px) {
+      .rail-foot {
+        font-size: 0.68rem;
+      }
+    }
+
+    /* Center Simulation Canvas Wrapper */
+    .canvas-stage {
+      position: relative;
+      width: 100%;
+      height: 365px;
+      background: radial-gradient(circle at 54% 48%, #142038 0%, #070c16 82%);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    @media (min-width: 640px) {
+      .canvas-stage {
+        height: 455px;
+      }
+    }
+
+    #simCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #simCanvas.grabbing {
+      cursor: grabbing;
+    }
+
+    /* 3. BOTTOM STRIP (Adaptive Slider: Magnet Size OR Supply Voltage + PWM) */
+    .cockpit-bottom {
+      background: linear-gradient(180deg, #111b2e 0%, #152137 100%);
+      border-top: 1px solid var(--border);
+      padding: 8px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    @media (min-width: 640px) {
+      .cockpit-bottom {
+        padding: 10px 14px 12px;
+      }
+    }
+
+    .bottom-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .bottom-label-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .bottom-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-sub);
+    }
+
+    .bottom-pill {
+      font-size: 0.76rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bottom-pill.mag {
+      color: #fde68a;
+      background: var(--amber-bg);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+    }
+
+    .bottom-pill.volt {
+      color: #fed7aa;
+      background: var(--orange-bg);
+      border: 1px solid rgba(251, 146, 60, 0.4);
+    }
+
+    .bottom-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .h-range {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1 1 auto;
+      height: 9px;
+      border-radius: var(--r-pill);
+      background: #1e293b;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .h-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #0f172a;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(56, 189, 248, 0.45);
+      cursor: pointer;
+    }
+
+    .h-range::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #0f172a;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      cursor: pointer;
+    }
+
+    .h-range.volt-range::-webkit-slider-thumb {
+      background: #fb923c;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(251, 146, 60, 0.45);
+    }
+
+    .h-range.volt-range::-moz-range-thumb {
+      background: #fb923c;
+    }
+
+    .auto-btn {
+      min-height: 30px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      color: #bae6fd;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.14s ease, transform 0.1s ease;
+    }
+
+    .auto-btn:hover {
+      background: rgba(56, 189, 248, 0.26);
+    }
+
+    .auto-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Live PWM Power Meter Bar (Electromagnet Mode) */
+    .pwm-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-sub);
+    }
+
+    .pwm-track {
+      flex: 1 1 auto;
+      height: 8px;
+      border-radius: var(--r-pill);
+      background: #09101d;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .pwm-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: var(--r-pill);
+      background: linear-gradient(90deg, #34d399 0%, #fbbf24 65%, #fb7185 100%);
+      transition: width 0.06s linear;
+    }
+
+    .pwm-pct {
+      min-width: 72px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--orange);
+    }
+
+    /* =========================================================================
+       LAYMAN'S PHYSICS READOUT PANEL (Below Cockpit: 2-col Mobile, 4-col Desktop)
+       ========================================================================= */
+    .readout-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    @media (min-width: 820px) {
+      .readout-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+    }
+
+    .info-card {
+      background: linear-gradient(180deg, rgba(22, 34, 56, 0.92) 0%, rgba(15, 23, 42, 0.96) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 11px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .info-card.wide {
+      grid-column: 1 / -1;
+      border-left: 3px solid var(--cyan);
+    }
+
+    .card-kicker {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .card-big {
+      font-size: 1.05rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card-desc {
+      font-size: 0.74rem;
+      color: var(--text-sub);
+      line-height: 1.38;
+    }
+
+    .badge-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: var(--r-pill);
+      width: fit-content;
+      margin-top: 2px;
+    }
+
+    .b-safe { background: var(--emerald-bg); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.35); }
+    .b-warn { background: var(--amber-bg); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.35); }
+    .b-hot  { background: var(--orange-bg); color: #fed7aa; border: 1px solid rgba(251, 146, 60, 0.4); }
+    .b-crit { background: var(--rose-bg); color: #fecdd3; border: 1px solid rgba(251, 113, 133, 0.45); }
+
+    .note-text {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      line-height: 1.5;
+    }
+
+    .note-text strong {
+      color: #ffffff;
+    }
+
+    .c-cyan { color: var(--cyan); }
+    .c-emerald { color: var(--emerald); }
+    .c-amber { color: var(--amber); }
+    .c-orange { color: var(--orange); }
+    .c-rose { color: var(--rose); }
+    .c-violet { color: var(--violet); }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <!-- Compact Title Bar -->
+    <header class="title-bar">
+      <div class="title-left">
+        <span class="title-badge">240Hz Lab</span>
+        <h1>Magnetic Levitation Physics Lab</h1>
+      </div>
+      <span class="drag-hint-top">Drag &amp; toss the globe directly on the picture</span>
+    </header>
+
+    <!-- =======================================================================
+         THE INTERACTIVE COCKPIT — ALL CONTROLS AROUND THE PICTURE
+         ======================================================================= -->
+    <section class="cockpit" aria-label="Interactive Magnetic Levitation Cockpit">
+      <!-- 1. TOP STRIP: Compact Toggles & Quick Actions -->
+      <div class="cockpit-top">
+        <div class="top-row">
+          <!-- Layout Toggle -->
+          <div class="seg-group" role="group" aria-label="Magnet Layout">
+            <button type="button" class="seg-btn active" data-group="layout" data-val="top">Top Only</button>
+            <button type="button" class="seg-btn" data-group="layout" data-val="bottom">Bottom Only</button>
+            <button type="button" class="seg-btn" data-group="layout" data-val="both">Top + Bot</button>
+          </div>
+          <!-- Ball Type Toggle -->
+          <div class="seg-group" role="group" aria-label="Ball Type" style="flex: 0.72 1 auto;">
+            <button type="button" class="seg-btn active" data-group="ballType" data-val="magnet">Magnet Ball</button>
+            <button type="button" class="seg-btn" data-group="ballType" data-val="steel">Steel Ball</button>
+          </div>
+        </div>
+
+        <div class="top-row">
+          <!-- Magnet Type Toggle -->
+          <div class="seg-group" role="group" aria-label="Magnet Type" style="flex: 0.85 1 auto;">
+            <button type="button" class="seg-btn active" data-group="magType" data-val="regular">Regular</button>
+            <button type="button" class="seg-btn" data-group="magType" data-val="electromagnet">Electromagnet</button>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="action-strip">
+            <button type="button" id="btnDrop" class="act-btn primary">✋ Drop / Test</button>
+            <button type="button" id="btnPid" class="act-btn pid-on hidden" title="Toggle Hall-Effect Computer Brain">🧠 Brain: ON</button>
+            <button type="button" id="btnNudge" class="act-btn nudge">👆 Nudge</button>
+            <button type="button" id="btnReset" class="act-btn">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. MIDDLE ROW: LEFT WEIGHT SLIDER + CANVAS PICTURE + RIGHT GAP SLIDER -->
+      <div class="cockpit-mid">
+        <!-- LEFT EDGE: BALL WEIGHT (0.5 lb to 10.0 lb) -->
+        <aside class="v-rail left" aria-label="Ball Weight Control">
+          <div class="rail-head">
+            <div class="rail-title">Weight</div>
+            <div class="rail-val weight-color" id="valWeight">5.0 lb</div>
+          </div>
+
+          <div
+            class="v-slider-hit"
+            id="sliderWeight"
+            role="slider"
+            tabindex="0"
+            aria-label="Ball Weight in Pounds"
+            aria-valuemin="0.5"
+            aria-valuemax="10.0"
+            aria-valuenow="5.0"
+          >
+            <div class="v-track">
+              <div class="v-fill weight-fill" id="fillWeight"></div>
+            </div>
+            <div class="v-thumb weight-thumb" id="thumbWeight"></div>
+          </div>
+
+          <div class="rail-foot" id="lblWeightObj">🧱 Brick</div>
+        </aside>
+
+        <!-- CENTERPIECE: LIVE 2D PHYSICS CANVAS -->
+        <div class="canvas-stage" id="canvasStage">
+          <canvas id="simCanvas" aria-label="Magnetic levitation real-time physics simulation"></canvas>
+        </div>
+
+        <!-- RIGHT EDGE: GAP / HEIGHT (0.25 in to 2.00 in) -->
+        <aside class="v-rail right" aria-label="Air Gap Control">
+          <div class="rail-head">
+            <div class="rail-title">Air Gap</div>
+            <div class="rail-val gap-color" id="valGap">0.75"</div>
+          </div>
+
+          <div
+            class="v-slider-hit"
+            id="sliderGap"
+            role="slider"
+            tabindex="0"
+            aria-label="Air Gap in Inches"
+            aria-valuemin="0.25"
+            aria-valuemax="2.00"
+            aria-valuenow="0.75"
+          >
+            <div class="v-track">
+              <div class="v-fill gap-fill" id="fillGap"></div>
+            </div>
+            <div class="v-thumb gap-thumb" id="thumbGap"></div>
+          </div>
+
+          <div class="rail-foot" id="lblGapObj">👍 Thumb</div>
+        </aside>
+      </div>
+
+      <!-- 3. BOTTOM STRIP: ADAPTIVE SLIDER (MAGNET SIZE OR SUPPLY VOLTAGE + PWM) -->
+      <div class="cockpit-bottom">
+        <!-- Regular Magnet Mode Bottom Control -->
+        <div id="bottomRegular">
+          <div class="bottom-head">
+            <div class="bottom-label-wrap">
+              <span class="bottom-title">Magnet Size &amp; Pull</span>
+              <span class="bottom-pill mag" id="valMagSize">0.95" Walnut · 70 lb sticker</span>
+            </div>
+            <button type="button" id="btnAutoSize" class="auto-btn">✨ Auto-Size</button>
+          </div>
+          <div class="bottom-slider-row" style="margin-top: 6px;">
+            <input type="range" id="rangeMagSize" class="h-range" min="0.40" max="3.00" step="0.05" value="0.95" aria-label="Magnet Diameter in Inches" />
+          </div>
+        </div>
+
+        <!-- Electromagnet Mode Bottom Control -->
+        <div id="bottomElectro" class="hidden">
+          <div class="bottom-head">
+            <div class="bottom-label-wrap">
+              <span class="bottom-title">Supply Voltage</span>
+              <span class="bottom-pill volt" id="valVoltage">24.0 V</span>
+            </div>
+            <button type="button" id="btnAutoVolt" class="auto-btn">⚡ Auto-V</button>
+          </div>
+          <div class="bottom-slider-row" style="margin-top: 6px;">
+            <input type="range" id="rangeVoltage" class="h-range volt-range" min="0" max="48" step="0.5" value="24" aria-label="Electromagnet Supply Voltage" />
+          </div>
+          <div class="pwm-bar-row" style="margin-top: 6px;">
+            <span>Coil Drive (PWM)</span>
+            <div class="pwm-track"><div class="pwm-fill" id="pwmFill"></div></div>
+            <span class="pwm-pct" id="pwmText">0% · 0 W</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         LAYMAN'S PHYSICS READOUT CARDS (2-col Mobile, 4-col Desktop)
+         Strictly everyday units: lbs, oz, in, V, W, °F, mph
+         ======================================================================= -->
+    <section class="readout-grid" aria-label="Everyday Physics Readouts">
+      <!-- Card 1: Magnet Size / Needed Sticker Pull -->
+      <article class="info-card">
+        <div class="card-kicker" id="card1Kicker">Current Magnet Size</div>
+        <div class="card-big c-amber" id="card1Val">70 lb sticker</div>
+        <div class="card-desc" id="card1Desc">Walnut-sized N52 (0.95" wide)</div>
+        <div class="badge-inline b-hot" id="card1Badge">⚠️ Heavy Snap Hazard</div>
+      </article>
+
+      <!-- Card 2: Power & Heat (EM) OR Stability Verdict (Regular) -->
+      <article class="info-card">
+        <div class="card-kicker" id="card2Kicker">Stability Verdict</div>
+        <div class="card-big c-rose" id="card2Val">Unstable!</div>
+        <div class="card-desc" id="card2Desc">Will snap up or drop when released</div>
+        <div class="badge-inline b-warn" id="card2Badge">Earnshaw's Theorem</div>
+      </article>
+
+      <!-- Card 3: Live Force Balance (lbs) -->
+      <article class="info-card">
+        <div class="card-kicker">Live Forces on Ball</div>
+        <div class="card-big c-cyan" id="card3Val">5.0 lb ↑ vs 5.0 lb ↓</div>
+        <div class="card-desc" id="card3Desc">Net force: 0.0 lb · Speed: 0.0 mph</div>
+        <div class="badge-inline b-safe" id="card3Badge">Held Ready</div>
+      </article>
+
+      <!-- Card 4: Exact Hover Requirement -->
+      <article class="info-card">
+        <div class="card-kicker" id="card4Kicker">To Balance Here</div>
+        <div class="card-big c-emerald" id="card4Val">0.95" Walnut</div>
+        <div class="card-desc" id="card4Desc">Needs ~70 lb touch-rated magnet at 0.75" gap</div>
+        <div class="badge-inline b-safe" id="card4Badge">⚾ Fits in 2.9" globe</div>
+      </article>
+
+      <!-- Full-Width Plain-English Physics Note -->
+      <article class="info-card wide">
+        <div class="card-kicker">Plain-English Physics Note</div>
+        <div class="note-text" id="physicsNote">
+          <!-- Updated dynamically -->
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* =======================================================================
+         PHYSICAL CONSTANTS (Real SI internally, Layman's Units for Display)
+         ======================================================================= */
+      const IN_TO_M = 0.0254;
+      const M_TO_IN = 1 / IN_TO_M;
+      const LB_TO_KG = 0.45359237;
+      const N_TO_LB = 1 / 4.4482216;
+      const LB_TO_N = 4.4482216;
+      const MPS_TO_MPH = 2.2369363;
+      const G_ACCEL = 9.80665; // m/s^2
+
+      const MU0 = 4 * Math.PI * 1e-7;
+      const BR_N52 = 1.45; // Tesla (N52 Neodymium)
+
+      // Baseball-sized globe: 2.90 inches diameter
+      const BALL_DIAM_IN = 2.90;
+      const BALL_R_IN = BALL_DIAM_IN * 0.5;
+      const BALL_R_M = BALL_R_IN * IN_TO_M;
+
+      // Shell thickness between globe exterior and internal magnet/steel core
+      const SHELL_OFFSET_M = 0.12 * IN_TO_M;
+
+      // Electromagnet desktop coil specs (copper winding on 1.35" iron core)
+      const EM_CORE_DIAM_IN = 1.35;
+      const EM_OHMS = 4.0;      // 4 Ohm coil (24V -> 6A max, 144W peak)
+      const EM_HENRY = 0.025;   // 25 mH inductance (tau = 6.25 ms)
+      const EM_I_REF_MAG = 14.2;   // Amps equivalent to N52 magnet core
+      const EM_I_REF_STEEL = 5.35; // Amps scale for ferromagnetic steel ball
+      const ROOM_TEMP_F = 72.0;
+
+      // Workspace physical horizontal limits (inches)
+      const SPINE_X_IN = -3.45;
+      const RIGHT_WALL_X_IN = 3.85;
+
+      /* =======================================================================
+         APPLICATION & RIGID-BODY PHYSICS STATE
+         ======================================================================= */
+      const state = {
+        // User Controls
+        layout: "top",         // "top" | "bottom" | "both"
+        ballType: "magnet",    // "magnet" | "steel"
+        magType: "regular",    // "regular" | "electromagnet"
+        pidOn: true,           // Auto-Hover Brain (in Electromagnet mode)
+        weightLbs: 5.0,        // 0.5 .. 10.0
+        gapIn: 0.75,           // 0.25 .. 2.00
+        magDiamIn: 0.90,       // 0.40 .. 3.00 (Regular magnet diameter)
+        supplyVolts: 24.0,     // 0 .. 48 (Electromagnet supply voltage)
+
+        // Rigid-body 2D state of the baseball-sized globe (in SI meters & rad)
+        // Origin (0,0) = exact target hover center; +y = downward, +x = right
+        ball: {
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          theta: 0,    // radians (0 = upright, N on top, S on bottom)
+          omega: 0,    // rad/s
+          held: true,  // true in Regular mode before clicking "Drop / Test"
+          dragging: false,
+          dragTargetX: 0,
+          dragTargetY: 0,
+          prevDragX: 0,
+          prevDragY: 0,
+          dragVx: 0,
+          dragVy: 0
+        },
+
+        // Electromagnet live electrical & thermal state
+        em: {
+          duty: 0,             // PWM duty cycle 0..1
+          currentA: 0,         // Instantaneous coil current (Amps)
+          watts: 0,            // Instantaneous heat/power (Watts)
+          tempF: ROOM_TEMP_F,  // Live coil temperature (°F)
+          pidIntegral: 0,      // PID integrator state (Amps)
+          saturated: false,    // True when hitting 100% PWM without enough lift
+          surgeGlow: 0         // Visual feedback pulse on catch
+        },
+
+        // Live force telemetry (in lbs) for HUD & arrows
+        forces: {
+          gravityLbs: 5.0,
+          topLbs: 0,      // Signed: negative = UP, positive = DOWN
+          botLbs: 0,      // Signed: negative = UP, positive = DOWN
+          netYLbs: 0,
+          netXLbs: 0,
+          torqueNm: 0
+        },
+
+        // Impact & Status feedback
+        fx: {
+          statusText: "HELD READY — PRESS DROP / TEST",
+          statusKind: "warn", // "ok" | "warn" | "danger" | "info"
+          lastImpactMph: 0,
+          lastImpactMsg: "",
+          impactTimer: 0,
+          shake: 0,
+          particles: [],
+          time: 0,
+          altDropUp: false
+        },
+
+        // Equilibrium / Sizing Helper cache
+        req: {
+          neededDiamIn: 0.90,
+          neededContactLbs: 64,
+          currentContactLbs: 64,
+          neededVolts: 12.0,
+          neededWatts: 36.0
+        }
+      };
+
+      /* =======================================================================
+         MAGNETIC PHYSICS MODEL (Real N52 Axial Cylinder + 2D Radial + Torque)
+         ======================================================================= */
+
+      /**
+       * Axial magnetic pull force (Newtons) between two identical coaxial N52
+       * cylinders (diameter D, length L = D) separated by face-to-face gap `zM`.
+       */
+      function n52AxialForceN(diamIn, zM) {
+        const D = Math.max(0.05, diamIn) * IN_TO_M;
+        const R = D * 0.5;
+        const L = D;
+        const z = Math.max(0, zM);
+
+        function bFunc(d) {
+          return (d + L) / Math.sqrt((d + L) * (d + L) + R * R) -
+                 d / Math.sqrt(d * d + R * R);
+        }
+
+        const prefactor = (BR_N52 * BR_N52 * Math.PI * R * R) / (2 * MU0);
+        return Math.max(0, prefactor * (bFunc(z) - bFunc(z + L)));
+      }
+
+      /**
+       * Direct-touch sticker rating (lbs) of a single N52 cylinder of diameter `diamIn`.
+       */
+      function n52ContactRatingLbs(diamIn) {
+        return n52AxialForceN(diamIn, 0) * N_TO_LB;
+      }
+
+      /**
+       * Solve for the exact N52 magnet diameter needed to produce `targetLbs`
+       * across air gap `gapIn` (accounting for shell offset and steel 2x gap).
+       */
+      function solveRequiredDiameterIn(targetLbs, gapIn, isSteel, isRepel) {
+        if (targetLbs <= 0.01) return 0.40;
+        const targetN = targetLbs * LB_TO_N;
+        const zM = isSteel
+          ? (gapIn * 2.0) * IN_TO_M + SHELL_OFFSET_M * 1.4
+          : gapIn * IN_TO_M + SHELL_OFFSET_M;
+        const repelMult = isRepel ? 0.90 : 1.0;
+
+        let lo = 0.25;
+        let hi = 5.5;
+        for (let i = 0; i < 40; i++) {
+          const mid = 0.5 * (lo + hi);
+          const f = n52AxialForceN(mid, zM) * repelMult;
+          if (f < targetN) lo = mid;
+          else hi = mid;
+        }
+        return 0.5 * (lo + hi);
+      }
+
+      /**
+       * Electromagnet axial force magnitude (Newtons) at air gap `zAirM` and current `amps`.
+       * Includes soft iron-core magnetic saturation around 13 A.
+       */
+      function emAxialForceN(zAirM, amps, isSteel) {
+        if (amps <= 0.0001) return 0;
+        // Soft iron saturation curve
+        const iSat = 14.0 * Math.tanh(amps / 14.0);
+        if (!isSteel) {
+          const zEff = Math.max(0, zAirM) + SHELL_OFFSET_M;
+          return n52AxialForceN(EM_CORE_DIAM_IN, zEff) * (iSat / EM_I_REF_MAG);
+        } else {
+          const zEff = Math.max(0, zAirM) * 2.0 + SHELL_OFFSET_M * 1.4;
+          const ratio = iSat / EM_I_REF_STEEL;
+          return n52AxialForceN(EM_CORE_DIAM_IN, zEff) * (ratio * ratio);
+        }
+      }
+
+      /**
+       * Compute exact DC coil current (Amps) needed to generate `targetN` at `gapIn`.
+       */
+      function solveRequiredEmAmps(targetN, gapIn, isSteel) {
+        if (targetN <= 0.001) return 0;
+        const zAirM = gapIn * IN_TO_M;
+        let lo = 0;
+        let hi = 18.0;
+        for (let i = 0; i < 36; i++) {
+          const mid = 0.5 * (lo + hi);
+          if (emAxialForceN(zAirM, mid, isSteel) < targetN) lo = mid;
+          else hi = mid;
+        }
+        return 0.5 * (lo + hi);
+      }
+
+      /**
+       * Compute 2D forces (Fx, Fy in Newtons) and torque (tau in N·m) from a single
+       * magnet (either top or bottom) acting on the globe at (x, y, theta).
+       */
+      function computeSingleMagnetInteraction(which, isElectro, diamIn, amps, x, y, theta, yFaceM) {
+        const isTop = which === "top";
+        const isSteel = state.ballType === "steel";
+
+        // Vertical air gap between magnet face and nearest surface of ball
+        const rawGapM = isTop
+          ? (y - BALL_R_M) - yFaceM
+          : yFaceM - (y + BALL_R_M);
+        const zAirM = Math.max(0, rawGapM);
+
+        // Axial force magnitude (positive scalar)
+        let fAxial = 0;
+        const effDiamIn = isElectro ? EM_CORE_DIAM_IN : diamIn;
+        if (isElectro) {
+          fAxial = emAxialForceN(zAirM, amps, isSteel);
+        } else {
+          const zEff = isSteel
+            ? zAirM * 2.0 + SHELL_OFFSET_M * 1.4
+            : zAirM + SHELL_OFFSET_M;
+          fAxial = n52AxialForceN(diamIn, zEff);
+        }
+
+        // Lateral attenuation off centerline (smooth radial bell curve)
+        const R = (effDiamIn * 0.5) * IN_TO_M;
+        const zScale = zAirM + SHELL_OFFSET_M;
+        const fieldWidth = Math.sqrt(R * R + (0.72 * zScale) * (0.72 * zScale) + (0.45 * BALL_R_M) * (0.45 * BALL_R_M));
+        const normX = x / fieldWidth;
+        const radialFalloff = Math.pow(1 + normX * normX, -1.75);
+
+        // Determine attraction vs repulsion sign:
+        // attractiveFactor > 0 means pulls TOWARD this magnet; < 0 means pushes AWAY
+        let attractiveFactor = 1.0;
+        if (!isSteel) {
+          const c = Math.cos(theta);
+          // Top magnet (S face down) attracts upright ball (N top -> cos(theta) > 0)
+          // Bottom magnet (S face up) repels upright ball (S bottom -> cos(theta) > 0)
+          attractiveFactor = isTop ? c : -c;
+        }
+
+        // Repulsion is slightly weaker (~90%) than attraction at equal distance
+        const repelMult = attractiveFactor < 0 ? 0.90 : 1.0;
+        const fMag = fAxial * radialFalloff * repelMult;
+
+        // Vertical Force Fy (+y is downward):
+        // For Top Magnet: attractiveFactor > 0 pulls UP (-y)
+        // For Bottom Magnet: attractiveFactor > 0 pulls DOWN (+y); < 0 pushes UP (-y)
+        const dirToMagnet = isTop ? -1 : 1;
+        const Fy = dirToMagnet * fMag * attractiveFactor;
+
+        // Horizontal Force Fx (Earnshaw's radial coupling):
+        // Attraction pulls INWARD toward x = 0; Repulsion pushes OUTWARD away from x = 0!
+        const lateralStrength = 1.45 * fMag * (normX / (1 + 0.5 * normX * normX));
+        const Fx = -attractiveFactor * lateralStrength;
+
+        // Dipole Rotational Torque tau (N·m) for Magnet Ball:
+        // Field lines curve slightly outward off-axis by angle fieldTilt
+        let tau = 0;
+        if (!isSteel) {
+          const fieldTilt = Math.atan2(x, zScale + R + BALL_R_M * 0.6) * (isTop ? -0.65 : 0.65);
+          const relAngle = theta - fieldTilt;
+          // Top magnet restores theta -> fieldTilt (-sin); Bottom magnet destabilizes (+sin)!
+          const lever = 0.52 * BALL_R_M;
+          const torqueSign = isTop ? -1 : 1;
+          tau = torqueSign * fMag * lever * Math.sin(relAngle);
+        }
+
+        return { Fx, Fy, tau };
+      }
+
+      /**
+       * Determine which magnets are active and whether each is an Electromagnet.
+       */
+      function getActiveMagnetConfig() {
+        const hasTop = state.layout === "top" || state.layout === "both";
+        const hasBot = state.layout === "bottom" || state.layout === "both";
+        const isEM = state.magType === "electromagnet";
+
+        // Top magnet is the active Electromagnet whenever Top is present.
+        // In Bottom Only + Electromagnet, the Bottom magnet is the Electromagnet.
+        const topIsEM = hasTop && isEM;
+        const botIsEM = hasBot && !hasTop && isEM;
+        return { hasTop, hasBot, topIsEM, botIsEM };
+      }
+
+      /**
+       * Recompute equilibrium requirements for the Layman Readouts & Auto-Size / Auto-V
+       */
+      function computeEquilibriumRequirements() {
+        const W = state.weightLbs;
+        const gap = state.gapIn;
+        const isSteel = state.ballType === "steel";
+        const cfg = getActiveMagnetConfig();
+
+        let targetTopLbs = 0;
+        let targetBotLbs = 0;
+
+        if (state.layout === "top") {
+          targetTopLbs = W;
+        } else if (state.layout === "bottom") {
+          targetBotLbs = W;
+        } else {
+          // Both: if Magnet Ball, split 50/50; if Steel Ball, bottom magnet hurts by pulling down!
+          if (isSteel) {
+            const botWrongPull = n52AxialForceN(state.magDiamIn, gap * 2.0 * IN_TO_M + SHELL_OFFSET_M * 1.4) * N_TO_LB;
+            targetTopLbs = W + botWrongPull;
+            targetBotLbs = -botWrongPull;
+          } else {
+            targetTopLbs = W * 0.5;
+            targetBotLbs = W * 0.5;
+          }
+        }
+
+        // Required regular N52 magnet diameter
+        let reqDiam = 0.90;
+        if (state.layout === "bottom") {
+          reqDiam = solveRequiredDiameterIn(W, gap, isSteel, !isSteel);
+        } else if (state.layout === "both" && !isSteel) {
+          // Average diameter for symmetric pair (accounting for 0.9 repulsion factor -> 1.9x total)
+          reqDiam = solveRequiredDiameterIn(W / 1.9, gap, false, false);
+        } else {
+          reqDiam = solveRequiredDiameterIn(targetTopLbs, gap, isSteel, false);
+        }
+
+        // Required Electromagnet voltage for steady hover at current gap
+        let emTargetLbs = W;
+        if (state.layout === "both") {
+          if (!isSteel) {
+            // Bottom permanent magnet pushes up with whatever current magnet size delivers
+            const botPushLbs = n52AxialForceN(state.magDiamIn, gap * IN_TO_M + SHELL_OFFSET_M) * 0.90 * N_TO_LB;
+            emTargetLbs = Math.max(0.1, W - botPushLbs);
+          } else {
+            const botPullDownLbs = n52AxialForceN(state.magDiamIn, gap * 2.0 * IN_TO_M + SHELL_OFFSET_M * 1.4) * N_TO_LB;
+            emTargetLbs = W + botPullDownLbs;
+          }
+        }
+        const reqAmps = solveRequiredEmAmps(emTargetLbs * LB_TO_N, gap, isSteel);
+        const reqVolts = reqAmps * EM_OHMS;
+        const reqWatts = reqVolts * reqAmps;
+
+        state.req = {
+          neededDiamIn: reqDiam,
+          neededContactLbs: n52ContactRatingLbs(reqDiam),
+          currentContactLbs: n52ContactRatingLbs(state.magDiamIn),
+          neededVolts: reqVolts,
+          neededAmps: reqAmps,
+          neededWatts: reqWatts,
+          emTargetLbs: emTargetLbs
+        };
+      }
+
+      /* =======================================================================
+         240Hz SUB-STEPPED 2D RIGID-BODY & RL COIL + PID SIMULATION ENGINE
+         ======================================================================= */
+      function stepPhysicsSubstep(dt) {
+        const b = state.ball;
+        const em = state.em;
+        const cfg = getActiveMagnetConfig();
+        const isSteel = state.ballType === "steel";
+
+        const massKg = state.weightLbs * LB_TO_KG;
+        const inertia = 0.4 * massKg * BALL_R_M * BALL_R_M;
+
+        const gapM = state.gapIn * IN_TO_M;
+        const yTopFaceM = -(BALL_R_M + gapM);
+        const yBotFaceM = +(BALL_R_M + gapM);
+
+        // 1. Electromagnet PID & RL Electrical Dynamics
+        if (cfg.topIsEM || cfg.botIsEM) {
+          const isTopCoil = cfg.topIsEM;
+          let targetDuty = 0;
+
+          if (state.pidOn && !b.held) {
+            // Hall-Effect Height Sensor reads vertical error relative to target y = 0
+            // Positive y means ball is too LOW -> need MORE upward force!
+            const errY = b.y; // meters
+            const velY = b.vy; // m/s
+
+            // If ball is Steel + Bottom Coil, energizing pulls DOWN (can't lift!)
+            if (!isTopCoil && isSteel) {
+              targetDuty = 0;
+              em.pidIntegral = 0;
+            } else {
+              // Compute local plant slope K_mag = |dF/dy| and K_i = dF/dI for smooth auto-tuned PID
+              const iEq = Math.max(0.25, state.req.neededAmps);
+              const epsZ = 0.001;
+              const f0 = emAxialForceN(gapM, iEq, isSteel);
+              const f1 = emAxialForceN(Math.max(0.0005, gapM - epsZ), iEq, isSteel);
+              const kMag = Math.abs(f1 - f0) / epsZ; // N/m
+
+              const epsI = 0.1;
+              const fI1 = emAxialForceN(gapM, iEq + epsI, isSteel);
+              const kI = Math.max(0.5, (fI1 - f0) / epsI); // N/A
+
+              // Critically damped pole placement around target hover point
+              // Note: Top coil is unstable (needs Kp*Ki > kMag); Bottom coil pushing is naturally springy
+              const baseStiff = isTopCoil ? (2.6 * kMag + 220 * massKg) : (180 * massKg);
+              const kp = baseStiff / kI; // A / m
+              const netStiff = Math.max(40 * massKg, baseStiff - (isTopCoil ? kMag : -kMag));
+              const kd = (2 * 0.92 * Math.sqrt(massKg * netStiff)) / kI; // A / (m/s)
+              const ki = (isTopCoil ? 18 : 12) * kp * 0.12; // Integral trim
+
+              // Only integrate when within capture range and not dragging
+              if (!b.dragging && Math.abs(errY) < gapM * 0.95) {
+                em.pidIntegral += errY * ki * dt;
+                const maxI = state.supplyVolts / EM_OHMS;
+                em.pidIntegral = Math.max(-maxI * 0.4, Math.min(maxI * 1.15, em.pidIntegral));
+              }
+
+              // Commanded coil current (Feedforward equilibrium + PID correction)
+              const cmdAmps = iEq + em.pidIntegral + kp * errY + kd * velY;
+              const maxAmps = Math.max(0.001, state.supplyVolts / EM_OHMS);
+              targetDuty = Math.max(0, Math.min(1, cmdAmps / maxAmps));
+
+              // Detect saturation (not enough supply voltage to hold the weight)
+              em.saturated = (cmdAmps > maxAmps * 1.02) && (errY > 0.0015);
+            }
+          } else if (state.pidOn && b.held) {
+            // While held steady, smoothly hold feedforward equilibrium
+            const maxAmps = Math.max(0.001, state.supplyVolts / EM_OHMS);
+            targetDuty = Math.max(0, Math.min(1, state.req.neededAmps / maxAmps));
+            em.pidIntegral = 0;
+            em.saturated = state.req.neededAmps > maxAmps * 1.01;
+          } else {
+            // PID OFF: Direct manual voltage drive! (100% of slider voltage)
+            targetDuty = state.supplyVolts > 0 ? 1.0 : 0.0;
+            em.pidIntegral = 0;
+            em.saturated = false;
+          }
+
+          em.duty = targetDuty;
+          const vEff = em.duty * state.supplyVolts;
+          const iTarget = vEff / EM_OHMS;
+
+          // Exact exponential integration of RL coil circuit (L di/dt + R i = V_eff)
+          const alpha = 1 - Math.exp((-EM_OHMS / EM_HENRY) * dt);
+          em.currentA += (iTarget - em.currentA) * alpha;
+          em.watts = em.currentA * em.currentA * EM_OHMS;
+
+          // Thermal rise & cooling model (°F)
+          const targetTemp = Math.min(430, ROOM_TEMP_F + em.watts * 1.55);
+          em.tempF += (targetTemp - em.tempF) * (dt / 5.0);
+        } else {
+          em.duty = 0;
+          em.currentA = 0;
+          em.watts = 0;
+          em.saturated = false;
+          em.tempF += (ROOM_TEMP_F - em.tempF) * (dt / 4.0);
+        }
+
+        // 2. Compute Real Forces & Torques on the Globe
+        let Fx = 0;
+        let Fy = massKg * G_ACCEL; // Real downward gravity
+        let tau = 0;
+
+        let topFyN = 0;
+        let botFyN = 0;
+
+        if (cfg.hasTop) {
+          const res = computeSingleMagnetInteraction(
+            "top",
+            cfg.topIsEM,
+            state.magDiamIn,
+            em.currentA,
+            b.x,
+            b.y,
+            b.theta,
+            yTopFaceM
+          );
+          Fx += res.Fx;
+          Fy += res.Fy;
+          tau += res.tau;
+          topFyN = res.Fy;
+        }
+
+        if (cfg.hasBot) {
+          const res = computeSingleMagnetInteraction(
+            "bottom",
+            cfg.botIsEM,
+            state.magDiamIn,
+            em.currentA,
+            b.x,
+            b.y,
+            b.theta,
+            yBotFaceM
+          );
+          Fx += res.Fx;
+          Fy += res.Fy;
+          tau += res.tau;
+          botFyN = res.Fy;
+        }
+
+        // Subtle air drag & eddy-current damping (realistic for metal/magnet motion)
+        const linDamp = (cfg.topIsEM || cfg.botIsEM) ? 0.65 * massKg : 0.25 * massKg;
+        const angDamp = 1.6 * inertia;
+        Fx -= b.vx * linDamp;
+        Fy -= b.vy * linDamp;
+        tau -= b.omega * angDamp;
+
+        // Store live telemetry in pounds
+        state.forces.gravityLbs = state.weightLbs;
+        state.forces.topLbs = topFyN * N_TO_LB;
+        state.forces.botLbs = botFyN * N_TO_LB;
+        state.forces.netYLbs = Fy * N_TO_LB;
+        state.forces.netXLbs = Fx * N_TO_LB;
+        state.forces.torqueNm = tau;
+
+        // 3. Integrate Rigid-Body Motion
+        if (b.dragging) {
+          // Smooth spring follow to pointer with real throw velocity tracking
+          const follow = 1 - Math.exp(-32 * dt);
+          const nextX = b.x + (b.dragTargetX - b.x) * follow;
+          const nextY = b.y + (b.dragTargetY - b.y) * follow;
+          b.vx = (nextX - b.x) / dt;
+          b.vy = (nextY - b.y) / dt;
+          b.x = nextX;
+          b.y = nextY;
+          // While holding, allow ball to feel magnetic torque gently!
+          b.omega += (tau / inertia) * dt * 0.45;
+          b.omega *= Math.exp(-5.0 * dt);
+          b.theta += b.omega * dt;
+        } else if (b.held) {
+          // Held at equilibrium preview position (before clicking Drop/Test)
+          b.x = 0;
+          b.y = 0;
+          b.vx = 0;
+          b.vy = 0;
+          b.theta = 0;
+          b.omega = 0;
+        } else {
+          // Free 2D rigid-body Euler-Cromer integration
+          const ax = Fx / massKg;
+          const ay = Fy / massKg;
+          const alphaAng = tau / inertia;
+
+          b.vx += ax * dt;
+          b.vy += ay * dt;
+          b.omega += alphaAng * dt;
+
+          // Safety velocity cap for numerical hygiene
+          const maxV = 14.0;
+          b.vx = Math.max(-maxV, Math.min(maxV, b.vx));
+          b.vy = Math.max(-maxV, Math.min(maxV, b.vy));
+          b.omega = Math.max(-35, Math.min(35, b.omega));
+
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          b.theta += b.omega * dt;
+        }
+
+        // Normalize theta to [-PI, PI]
+        while (b.theta > Math.PI) b.theta -= Math.PI * 2;
+        while (b.theta < -Math.PI) b.theta += Math.PI * 2;
+
+        // 4. Real Collisions with Top Magnet, Bottom Base/Magnet, C-Frame Spine & Chamber Wall
+        const minY = yTopFaceM + BALL_R_M;
+        const maxY = yBotFaceM - BALL_R_M;
+        const minX = SPINE_X_IN * IN_TO_M + BALL_R_M;
+        const maxX = RIGHT_WALL_X_IN * IN_TO_M - BALL_R_M;
+
+        const restitution = 0.28;
+
+        // Top ceiling / top magnet collision
+        if (b.y < minY) {
+          const impactSpeed = Math.abs(b.vy);
+          b.y = minY;
+          if (!b.dragging && impactSpeed > 0.35) {
+            triggerImpact(b.x, yTopFaceM, impactSpeed, "top");
+          }
+          if (b.vy < 0) b.vy = -b.vy * restitution;
+          // Contact friction
+          b.vx *= Math.exp(-14 * dt);
+          b.omega *= Math.exp(-12 * dt);
+        }
+
+        // Bottom base / bottom magnet collision
+        if (b.y > maxY) {
+          const impactSpeed = Math.abs(b.vy);
+          b.y = maxY;
+          if (!b.dragging && impactSpeed > 0.35) {
+            triggerImpact(b.x, yBotFaceM, impactSpeed, "bottom");
+          }
+          if (b.vy > 0) b.vy = -b.vy * restitution;
+          // Rolling friction along base
+          b.vx *= Math.exp(-6 * dt);
+          b.omega += ((b.vx / BALL_R_M) - b.omega) * Math.min(1, 10 * dt);
+        }
+
+        // Left C-frame aluminum spine collision
+        if (b.x < minX) {
+          const impactSpeed = Math.abs(b.vx);
+          b.x = minX;
+          if (!b.dragging && impactSpeed > 0.45) {
+            triggerImpact(SPINE_X_IN * IN_TO_M, b.y, impactSpeed, "side");
+          }
+          if (b.vx < 0) b.vx = -b.vx * 0.42;
+        }
+
+        // Right lab chamber wall collision
+        if (b.x > maxX) {
+          const impactSpeed = Math.abs(b.vx);
+          b.x = maxX;
+          if (!b.dragging && impactSpeed > 0.45) {
+            triggerImpact(RIGHT_WALL_X_IN * IN_TO_M, b.y, impactSpeed, "side");
+          }
+          if (b.vx > 0) b.vx = -b.vx * 0.42;
+        }
+      }
+
+      /**
+       * Spawn metallic impact sparks & compute real mph impact feedback
+       */
+      function triggerImpact(xM, yM, speedMps, surface) {
+        const mph = speedMps * MPS_TO_MPH;
+        const fx = state.fx;
+        if (mph < 0.8) return;
+
+        fx.lastImpactMph = mph;
+        fx.impactTimer = 2.6;
+        fx.shake = Math.min(9, mph * 0.55);
+
+        const flipped = Math.abs(state.ball.theta) > Math.PI * 0.55;
+        if (surface === "top") {
+          const pinch = mph > 4.5 ? " — finger pinch risk!" : "!";
+          fx.lastImpactMsg = "SNAP TO TOP! " + mph.toFixed(1) + " mph" + pinch;
+        } else if (surface === "bottom") {
+          if (flipped && state.ballType === "magnet" && state.layout !== "top") {
+            fx.lastImpactMsg = "FLIPPED & SNAPPED! " + mph.toFixed(1) + " mph";
+          } else if (state.ballType === "steel" && state.layout !== "top") {
+            fx.lastImpactMsg = "YANKED DOWN! " + mph.toFixed(1) + " mph";
+          } else {
+            fx.lastImpactMsg = "BONK! Dropped at " + mph.toFixed(1) + " mph";
+          }
+        } else {
+          fx.lastImpactMsg = "SHOT SIDEWAYS! " + mph.toFixed(1) + " mph";
+        }
+
+        // Metallic spark burst
+        const count = Math.min(20, Math.max(6, Math.round(mph * 1.6)));
+        for (let i = 0; i < count; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = (0.4 + Math.random() * 1.4) * Math.min(5, speedMps);
+          fx.particles.push({
+            x: xM,
+            y: yM,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            life: 0.28 + Math.random() * 0.32,
+            maxLife: 0.6,
+            color: surface === "top" ? "#fbbf24" : "#38bdf8"
+          });
+        }
+      }
+
+      /**
+       * Determine live on-canvas status pill text & color
+       */
+      function updateLiveStatus() {
+        const b = state.ball;
+        const em = state.em;
+        const fx = state.fx;
+        const cfg = getActiveMagnetConfig();
+        const gapM = state.gapIn * IN_TO_M;
+        const minY = -(BALL_R_M + gapM) + BALL_R_M;
+        const maxY = +(BALL_R_M + gapM) - BALL_R_M;
+
+        if (b.dragging) {
+          fx.statusText = "HOLDING BALL — RELEASE OR TOSS TO TEST";
+          fx.statusKind = "info";
+          return;
+        }
+
+        if (b.held) {
+          fx.statusText = "UNSTABLE PREVIEW — PRESS DROP / TEST";
+          fx.statusKind = "warn";
+          return;
+        }
+
+        // Recent dramatic collision message takes priority briefly
+        if (fx.impactTimer > 0 && fx.lastImpactMsg) {
+          fx.statusText = fx.lastImpactMsg;
+          fx.statusKind = "danger";
+          return;
+        }
+
+        // Check if stuck to top magnet
+        if (b.y <= minY + 0.0015 && Math.abs(b.vy) < 0.08) {
+          fx.statusText = "SNAPPED TO TOP MAGNET!";
+          fx.statusKind = "danger";
+          return;
+        }
+
+        // Check if resting on bottom base/magnet
+        if (b.y >= maxY - 0.0015 && Math.abs(b.vy) < 0.08) {
+          if (state.magType === "electromagnet" && state.pidOn && em.saturated) {
+            fx.statusText = "NOT ENOUGH VOLTAGE — DROPPED!";
+          } else if (state.ballType === "steel" && state.layout === "bottom") {
+            fx.statusText = "STUCK TO BOTTOM (STEEL ONLY PULLS!)";
+          } else if (Math.abs(b.theta) > Math.PI * 0.55) {
+            fx.statusText = "FLIPPED UPSIDE-DOWN & SNAPPED!";
+          } else {
+            fx.statusText = "DROPPED TO BASE!";
+          }
+          fx.statusKind = "danger";
+          return;
+        }
+
+        // Active hovering / in-flight states
+        if (state.magType === "electromagnet") {
+          if (!state.pidOn) {
+            fx.statusText = "MANUAL VOLTAGE — BALANCING ON KNIFE-EDGE";
+            fx.statusKind = "warn";
+          } else if (em.saturated) {
+            fx.statusText = "MAX POWER (100%) — VOLTAGE TOO LOW!";
+            fx.statusKind = "danger";
+          } else if (cfg.botIsEM && state.ballType === "magnet") {
+            fx.statusText = "BOTTOM COIL PUSHING — TILT UNSTABLE!";
+            fx.statusKind = "warn";
+          } else if (Math.abs(b.y) < 0.004 && Math.abs(b.vy) < 0.08 && Math.abs(b.x) < 0.008) {
+            fx.statusText = "HOVERING STEADY · BRAIN LOCKED";
+            fx.statusKind = "ok";
+          } else {
+            fx.statusText = "BRAIN STABILIZING · PULSING COIL";
+            fx.statusKind = "info";
+          }
+        } else {
+          fx.statusText = "UNSTABLE — EARNSHAW'S THEOREM IN ACTION!";
+          fx.statusKind = "warn";
+        }
+      }
+
+      /* =======================================================================
+         LAYMAN'S COMPARISON HELPERS (Zero raw SI jargon)
+         ======================================================================= */
+      function getWeightObjectShort(lbs) {
+        if (lbs < 0.85) return "⚾ Baseball";
+        if (lbs < 1.35) return "🥫 Soda Can";
+        if (lbs < 2.2)  return "🍞 Bread";
+        if (lbs < 3.4)  return "🍾 2L Soda";
+        if (lbs < 4.5)  return "🛍️ Sugar";
+        if (lbs < 6.0)  return "🧱 Brick";
+        if (lbs < 7.8)  return "🐈 Cat";
+        if (lbs < 9.2)  return "🥛 Milk Jug";
+        return "🎳 Light Ball";
+      }
+
+      function getBallMaterialSpec(lbs) {
+        if (lbs < 1.3)  return { name: "Light Wood",  c1: "#d6a46e", c2: "#8f5f34", c3: "#4d2f16", rim: "#f5cfa3" };
+        if (lbs < 2.9)  return { name: "Aluminum",    c1: "#e2e8f0", c2: "#94a3b8", c3: "#334155", rim: "#f8fafc" };
+        if (lbs < 4.4)  return { name: "Solid Steel", c1: "#cbd5e1", c2: "#64748b", c3: "#1e293b", rim: "#e2e8f0" };
+        if (lbs < 6.8)  return { name: "Solid Brass", c1: "#fde68a", c2: "#b47b2b", c3: "#54330c", rim: "#fef08a" };
+        return               { name: "Heavy Lead",   c1: "#94a3b8", c2: "#475569", c3: "#0f172a", rim: "#cbd5e1" };
+      }
+
+      function getGapObjectShort(inches) {
+        if (inches <= 0.35) return "🪙 4 Coins";
+        if (inches <= 0.55) return "🤙 Pinky";
+        if (inches <= 0.88) return "👍 Thumb";
+        if (inches <= 1.18) return "🪙 Quarter";
+        if (inches <= 1.58) return "✌️ 2 Fingers";
+        return "🔋 AA Batt";
+      }
+
+      function getMagnetSizeObject(diamIn) {
+        if (diamIn < 0.48) return "Pea";
+        if (diamIn < 0.68) return "Marble";
+        if (diamIn < 0.82) return "Large Grape";
+        if (diamIn < 0.94) return "Acorn";
+        if (diamIn < 1.32) return "Walnut";
+        if (diamIn < 1.82) return "Golf Ball";
+        if (diamIn < 2.48) return "Tennis Ball";
+        if (diamIn < 2.85) return "Apple";
+        return "Grapefruit";
+      }
+
+      function getSafetyRating(contactLbs) {
+        if (contactLbs < 8)   return { text: "✅ Safe to Handle", cls: "b-safe" };
+        if (contactLbs < 35)  return { text: "🤏 Finger Pinch Risk", cls: "b-warn" };
+        if (contactLbs < 110) return { text: "⚠️ Heavy Snap Hazard", cls: "b-hot" };
+        return                       { text: "🚨 Bone-Crushing Danger", cls: "b-crit" };
+      }
+
+      function getPowerCompare(volts, watts) {
+        if (watts < 2.5)  return "Like 2 AA batteries";
+        if (watts < 18)   return "Like a phone charger";
+        if (watts < 85)   return "Like a laptop power brick";
+        if (watts < 240)  return "Like a car battery / bright lamp";
+        return "Like a space heater! (Very hot)";
+      }
+
+      function fmtLb(v) {
+        const a = Math.abs(v);
+        if (a >= 100) return Math.round(a).toLocaleString() + " lb";
+        if (a >= 10)  return a.toFixed(1) + " lb";
+        return a.toFixed(1) + " lb";
+      }
+
+      /* =======================================================================
+         DOM REFERENCES & UI SYNCHRONIZATION
+         ======================================================================= */
+      const el = {
+        canvasStage: document.getElementById("canvasStage"),
+        canvas: document.getElementById("simCanvas"),
+
+        btnDrop: document.getElementById("btnDrop"),
+        btnPid: document.getElementById("btnPid"),
+        btnNudge: document.getElementById("btnNudge"),
+        btnReset: document.getElementById("btnReset"),
+
+        sliderWeight: document.getElementById("sliderWeight"),
+        fillWeight: document.getElementById("fillWeight"),
+        thumbWeight: document.getElementById("thumbWeight"),
+        valWeight: document.getElementById("valWeight"),
+        lblWeightObj: document.getElementById("lblWeightObj"),
+
+        sliderGap: document.getElementById("sliderGap"),
+        fillGap: document.getElementById("fillGap"),
+        thumbGap: document.getElementById("thumbGap"),
+        valGap: document.getElementById("valGap"),
+        lblGapObj: document.getElementById("lblGapObj"),
+
+        bottomRegular: document.getElementById("bottomRegular"),
+        bottomElectro: document.getElementById("bottomElectro"),
+        valMagSize: document.getElementById("valMagSize"),
+        rangeMagSize: document.getElementById("rangeMagSize"),
+        btnAutoSize: document.getElementById("btnAutoSize"),
+
+        valVoltage: document.getElementById("valVoltage"),
+        rangeVoltage: document.getElementById("rangeVoltage"),
+        btnAutoVolt: document.getElementById("btnAutoVolt"),
+        pwmFill: document.getElementById("pwmFill"),
+        pwmText: document.getElementById("pwmText"),
+
+        card1Kicker: document.getElementById("card1Kicker"),
+        card1Val: document.getElementById("card1Val"),
+        card1Desc: document.getElementById("card1Desc"),
+        card1Badge: document.getElementById("card1Badge"),
+
+        card2Kicker: document.getElementById("card2Kicker"),
+        card2Val: document.getElementById("card2Val"),
+        card2Desc: document.getElementById("card2Desc"),
+        card2Badge: document.getElementById("card2Badge"),
+
+        card3Val: document.getElementById("card3Val"),
+        card3Desc: document.getElementById("card3Desc"),
+        card3Badge: document.getElementById("card3Badge"),
+
+        card4Kicker: document.getElementById("card4Kicker"),
+        card4Val: document.getElementById("card4Val"),
+        card4Desc: document.getElementById("card4Desc"),
+        card4Badge: document.getElementById("card4Badge"),
+
+        physicsNote: document.getElementById("physicsNote")
+      };
+
+      function syncVerticalSliderVisual(sliderEl, fillEl, thumbEl, val, min, max) {
+        const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+        fillEl.style.height = pct + "%";
+        thumbEl.style.bottom = pct + "%";
+        sliderEl.setAttribute("aria-valuenow", val.toFixed(2));
+      }
+
+      function updateStaticReadouts() {
+        computeEquilibriumRequirements();
+        const isEM = state.magType === "electromagnet";
+        const isSteel = state.ballType === "steel";
+        const r = state.req;
+
+        // Left & Right Rail Labels
+        const ozNote = state.weightLbs < 1.0 ? Math.round(state.weightLbs * 16) + " oz" : state.weightLbs.toFixed(1) + " lb";
+        el.valWeight.textContent = ozNote;
+        el.lblWeightObj.textContent = getWeightObjectShort(state.weightLbs);
+        syncVerticalSliderVisual(el.sliderWeight, el.fillWeight, el.thumbWeight, state.weightLbs, 0.5, 10.0);
+
+        el.valGap.textContent = state.gapIn.toFixed(2) + '"';
+        el.lblGapObj.textContent = getGapObjectShort(state.gapIn);
+        syncVerticalSliderVisual(el.sliderGap, el.fillGap, el.thumbGap, state.gapIn, 0.25, 2.00);
+
+        // Top Bar contextual buttons
+        el.btnDrop.classList.toggle("hidden", isEM && state.pidOn);
+        el.btnPid.classList.toggle("hidden", !isEM);
+        el.btnPid.textContent = state.pidOn ? "🧠 Brain: ON" : "🧠 Brain: OFF";
+        el.btnPid.className = "act-btn " + (state.pidOn ? "pid-on" : "pid-off") + (isEM ? "" : " hidden");
+
+        // Bottom Strip mode switch
+        el.bottomRegular.classList.toggle("hidden", isEM);
+        el.bottomElectro.classList.toggle("hidden", !isEM);
+
+        const curObj = getMagnetSizeObject(state.magDiamIn);
+        const curSticker = Math.round(r.currentContactLbs);
+        el.valMagSize.textContent = state.magDiamIn.toFixed(2) + '" ' + curObj + " · " + curSticker.toLocaleString() + " lb sticker";
+        el.rangeMagSize.value = state.magDiamIn.toFixed(2);
+
+        el.valVoltage.textContent = state.supplyVolts.toFixed(1) + " V" + (state.pidOn ? " max" : " manual");
+        el.rangeVoltage.value = state.supplyVolts.toFixed(1);
+
+        // Card 1: Current Magnet Size / Rating
+        if (isEM) {
+          el.card1Kicker.textContent = "Electromagnet Coil";
+          el.card1Val.textContent = EM_CORE_DIAM_IN.toFixed(2) + '" Copper Coil';
+          el.card1Desc.textContent = state.layout === "both"
+            ? "Top active coil + " + state.magDiamIn.toFixed(2) + '" bottom magnet'
+            : "Walnut-sized iron core with Hall sensor";
+          el.card1Badge.textContent = "⚡ Active Magnetic Core";
+          el.card1Badge.className = "badge-inline b-safe";
+        } else {
+          el.card1Kicker.textContent = "Current Magnet Size";
+          el.card1Val.textContent = curSticker.toLocaleString() + " lb sticker";
+          el.card1Desc.textContent = curObj + ' N52 (' + state.magDiamIn.toFixed(2) + '" wide cylinder)';
+          const safety = getSafetyRating(r.currentContactLbs);
+          el.card1Badge.textContent = safety.text;
+          el.card1Badge.className = "badge-inline " + safety.cls;
+        }
+
+        // Card 4: Exact Hover Requirement
+        if (isEM) {
+          el.card4Kicker.textContent = "Voltage Needed Here";
+          const idealV = Math.min(99, r.neededVolts);
+          el.card4Val.textContent = r.neededVolts > 48 ? ">48 V needed!" : idealV.toFixed(1) + " V (" + Math.round(r.neededWatts) + " W)";
+          el.card4Desc.textContent = "To lift " + state.weightLbs.toFixed(1) + ' lb across ' + state.gapIn.toFixed(2) + '" air gap';
+          if (state.supplyVolts >= r.neededVolts * 1.08) {
+            el.card4Badge.textContent = "✅ Enough Voltage";
+            el.card4Badge.className = "badge-inline b-safe";
+          } else {
+            el.card4Badge.textContent = "⚠️ Turn Up Voltage!";
+            el.card4Badge.className = "badge-inline b-crit";
+          }
+        } else {
+          const reqObj = getMagnetSizeObject(r.neededDiamIn);
+          const reqSticker = Math.round(r.neededContactLbs);
+          el.card4Kicker.textContent = "Needed to Balance";
+          el.card4Val.textContent = r.neededDiamIn.toFixed(2) + '" ' + reqObj;
+          el.card4Desc.textContent = "~" + reqSticker.toLocaleString() + ' lb touch rating at ' + state.gapIn.toFixed(2) + '" gap';
+          if (r.neededDiamIn > 2.65 && !isSteel) {
+            el.card4Badge.textContent = "⚠️ Too big for 2.9\" ball!";
+            el.card4Badge.className = "badge-inline b-crit";
+          } else {
+            el.card4Badge.textContent = "⚾ Fits 2.9\" baseball";
+            el.card4Badge.className = "badge-inline b-safe";
+          }
+        }
+
+        // Plain-English Dynamic Physics Note
+        updatePlainEnglishNote();
+      }
+
+      /**
+       * Fast 15Hz live readout update (PWM bar, coil temp °F, live forces, mph)
+       */
+      function updateLiveTelemetryUI() {
+        const isEM = state.magType === "electromagnet";
+        const em = state.em;
+        const f = state.forces;
+        const b = state.ball;
+
+        // PWM Power Bar in Bottom Strip
+        if (isEM) {
+          const pct = Math.round(em.duty * 100);
+          el.pwmFill.style.width = pct + "%";
+          el.pwmText.textContent = pct + "% · " + Math.round(em.watts) + " W";
+        }
+
+        // Card 2: Power & Heat (EM) OR Stability Verdict (Regular)
+        if (isEM) {
+          const vEff = em.duty * state.supplyVolts;
+          el.card2Kicker.textContent = "Live Power & Heat";
+          el.card2Val.textContent = Math.round(em.watts) + " W · " + Math.round(em.tempF) + "°F";
+          el.card2Val.className = "card-big " + (em.tempF > 180 ? "c-rose" : em.tempF > 125 ? "c-orange" : "c-emerald");
+          el.card2Desc.textContent = vEff.toFixed(1) + "V avg · " + getPowerCompare(vEff, em.watts);
+          if (em.tempF > 200) {
+            el.card2Badge.textContent = "🔥 Overheating Coil!";
+            el.card2Badge.className = "badge-inline b-crit";
+          } else if (em.tempF > 130) {
+            el.card2Badge.textContent = "♨️ Running Hot";
+            el.card2Badge.className = "badge-inline b-hot";
+          } else {
+            el.card2Badge.textContent = "❄️ Cool & Safe";
+            el.card2Badge.className = "badge-inline b-safe";
+          }
+        } else {
+          el.card2Kicker.textContent = "Stability Verdict";
+          el.card2Val.textContent = "Unstable Float";
+          el.card2Val.className = "card-big c-rose";
+          if (state.layout === "bottom" && state.ballType === "steel") {
+            el.card2Desc.textContent = "Bottom magnet pulls plain steel DOWN — zero lift!";
+          } else if (state.layout === "bottom") {
+            el.card2Desc.textContent = "Bottom push flips the magnet ball upside-down!";
+          } else if (state.layout === "both" && state.ballType === "steel") {
+            el.card2Desc.textContent = "Bottom magnet fights top magnet by pulling steel down!";
+          } else {
+            el.card2Desc.textContent = "Tiny wobble snaps it to top or drops it (Earnshaw's Law)";
+          }
+          el.card2Badge.textContent = "Needs Active Brain";
+          el.card2Badge.className = "badge-inline b-warn";
+        }
+
+        // Card 3: Live Forces & Speed
+        const magUpLbs = -(f.topLbs + f.botLbs); // Positive = net upward magnetic force
+        const speedMph = Math.hypot(b.vx, b.vy) * MPS_TO_MPH;
+        el.card3Val.textContent = (magUpLbs >= 0 ? magUpLbs.toFixed(1) + " lb ↑" : Math.abs(magUpLbs).toFixed(1) + " lb ↓") +
+          " vs " + f.gravityLbs.toFixed(1) + " lb ↓";
+        el.card3Desc.textContent = "Net: " + (f.netYLbs <= 0 ? Math.abs(f.netYLbs).toFixed(1) + " lb ↑" : f.netYLbs.toFixed(1) + " lb ↓") +
+          " · Speed: " + speedMph.toFixed(1) + " mph";
+
+        if (state.fx.statusKind === "ok") {
+          el.card3Badge.textContent = "✅ Balanced Hover";
+          el.card3Badge.className = "badge-inline b-safe";
+        } else if (state.fx.statusKind === "danger") {
+          el.card3Badge.textContent = "💥 " + (state.fx.lastImpactMph > 0.8 ? state.fx.lastImpactMph.toFixed(1) + " mph Impact" : "Lost Levitation");
+          el.card3Badge.className = "badge-inline b-crit";
+        } else {
+          el.card3Badge.textContent = b.held ? "✋ Held Ready" : "⚡ In Motion";
+          el.card3Badge.className = "badge-inline b-warn";
+        }
+      }
+
+      function updatePlainEnglishNote() {
+        const isEM = state.magType === "electromagnet";
+        const isSteel = state.ballType === "steel";
+        const lay = state.layout;
+        const w = state.weightLbs.toFixed(1) + " lb";
+        const g = state.gapIn.toFixed(2) + '"';
+        const mat = getBallMaterialSpec(state.weightLbs).name;
+
+        let html = "";
+        if (lay === "bottom" && isSteel) {
+          html = "<strong>Why Steel Drops Hard Here:</strong> Magnets can only <em>pull</em> plain steel—never push it! A bottom magnet adds its downward pull on top of gravity, slamming your " + w + " " + mat.toLowerCase() + " steel ball straight onto the base.";
+        } else if (lay === "bottom" && !isSteel) {
+          html = "<strong>Why Bottom-Only Flips Over:</strong> Pushing upward from below creates a springy vertical cushion, but it also twists the magnet ball like balancing a pencil on your fingertip. Even with a magnet strong enough to lift " + w + ", it naturally tilts, <strong>flips upside-down</strong>, and snaps down or shoots sideways!";
+        } else if (lay === "both" && isSteel) {
+          html = "<strong>Bottom Magnet Sabotage:</strong> Because plain steel can't be repelled, the bottom magnet pulls your " + w + " steel ball <em>downward</em>—forcing the top magnet to fight both gravity and the base! Switch to <strong>Top Only</strong> or put a <strong>Magnet Ball</strong> inside.";
+        } else if (isEM) {
+          if (!state.pidOn) {
+            html = "<strong>Manual Voltage Challenge:</strong> You turned OFF the Hall-effect computer brain! Try dragging the Voltage slider to hover your " + w + " ball at " + g + "—even 0.5V too high snaps it upward, and 0.5V too low drops it. Turn <strong>Brain: ON</strong> to see why real floating globes need a 1,000x/sec feedback loop.";
+          } else if (state.supplyVolts < state.req.neededVolts) {
+            html = "<strong>Not Enough Voltage:</strong> At a " + g + " air gap, lifting " + w + " requires about <strong>" + state.req.neededVolts.toFixed(1) + "V</strong>. Your coil is hitting 100% power and still can't match gravity—slide Voltage higher or click <strong>Auto-V</strong>!";
+          } else {
+            html = "<strong>Active Levitation Locked:</strong> The green Hall-effect sensor measures your " + w + " " + mat.toLowerCase() + " ball's height hundreds of times per second and pulses coil power to catch every wobble. <strong>Drag or toss the ball</strong> on the canvas to watch the coil surge power and catch it!";
+          }
+        } else {
+          // Regular magnets: top or both (magnet ball)
+          const mult = Math.max(1, Math.round(state.req.neededContactLbs / Math.max(0.1, state.weightLbs)));
+          html = "<strong>Air Gaps Eat Magnetic Pull:</strong> To lift " + w + " across " + g + " of empty air takes a <strong>" +
+            Math.round(state.req.neededContactLbs).toLocaleString() + " lb touch-rated magnet</strong> (~" + mult +
+            "x stronger at contact!). Even with the exact right size, static magnets obey <em>Earnshaw's Theorem</em>—click <strong>Drop / Test</strong> to see it snap up, flip, or fall.";
+        }
+        el.physicsNote.innerHTML = html;
+      }
+
+      /* =======================================================================
+         CANVAS COORDINATE TRANSFORM & REALISTIC 2D RENDERER
+         ======================================================================= */
+      const ctx = el.canvas.getContext("2d");
+      let cw = 300;
+      let ch = 365;
+      let pxPerIn = 46;
+      let originX = 155;
+      let originY = 185;
+
+      function resizeCanvas() {
+        const rect = el.canvasStage.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cw = Math.max(200, rect.width);
+        ch = Math.max(260, rect.height);
+        el.canvas.width = Math.round(cw * dpr);
+        el.canvas.height = Math.round(ch * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // Scale real inches cleanly so full 2.0" gap + 2.9" ball + C-frame always fit!
+        // Total vertical span needed at max gap (2.0"): 2.9 + 4.0 + ~2.4 magnets/arms = 9.3 in
+        // Total horizontal span: ~7.8 in
+        const scaleY = ch / 8.8;
+        const scaleX = cw / 7.9;
+        pxPerIn = Math.max(26, Math.min(58, Math.min(scaleY, scaleX)));
+        originX = cw * 0.53;
+        originY = ch * 0.52;
+      }
+
+      function mToPxX(xM) { return originX + (xM * M_TO_IN) * pxPerIn; }
+      function mToPxY(yM) { return originY + (yM * M_TO_IN) * pxPerIn; }
+      function pxToMX(px) { return ((px - originX) / pxPerIn) * IN_TO_M; }
+      function pxToMY(py) { return ((py - originY) / pxPerIn) * IN_TO_M; }
+
+      function rrect(x, y, w, h, r) {
+        const rad = Math.min(r, w * 0.5, h * 0.5);
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rad);
+        ctx.arcTo(x + w, y + h, x, y + h, rad);
+        ctx.arcTo(x, y + h, x, y, rad);
+        ctx.arcTo(x, y, x + w, y, rad);
+        ctx.closePath();
+      }
+
+      function drawCylinderMagnet(cx, yTop, w, h, topPole, botPole) {
+        const x = cx - w * 0.5;
+        const half = h * 0.5;
+        ctx.save();
+
+        // Metallic nickel/chrome shading overlay
+        ctx.fillStyle = topPole === "N" ? "#dc2626" : "#2563eb";
+        rrect(x, yTop, w, half + 1, 4);
+        ctx.fill();
+
+        ctx.fillStyle = botPole === "N" ? "#dc2626" : "#2563eb";
+        rrect(x, yTop + half - 1, w, half + 1, 4);
+        ctx.fill();
+
+        // Cylinder specular gloss (3D metallic reflection)
+        const gloss = ctx.createLinearGradient(x, yTop, x + w, yTop);
+        gloss.addColorStop(0, "rgba(0,0,0,0.42)");
+        gloss.addColorStop(0.24, "rgba(255,255,255,0.28)");
+        gloss.addColorStop(0.45, "rgba(255,255,255,0.06)");
+        gloss.addColorStop(0.82, "rgba(0,0,0,0.22)");
+        gloss.addColorStop(1, "rgba(0,0,0,0.52)");
+        ctx.fillStyle = gloss;
+        rrect(x, yTop, w, h, 4);
+        ctx.fill();
+
+        // Chrome rim
+        ctx.strokeStyle = "rgba(226, 232, 240, 0.55)";
+        ctx.lineWidth = 1.2;
+        rrect(x, yTop, w, h, 4);
+        ctx.stroke();
+
+        // Crisp Pole Letters (if tall enough)
+        if (h >= 16) {
+          ctx.font = "800 " + Math.max(8, Math.min(11, Math.round(h * 0.34))) + "px " + getComputedStyle(document.body).fontFamily;
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(topPole, cx, yTop + half * 0.52);
+          ctx.fillText(botPole, cx, yTop + half * 1.5);
+        }
+        ctx.restore();
+      }
+
+      function drawElectromagnetCoil(cx, yTop, w, h, isTopCoil) {
+        const x = cx - w * 0.5;
+        const em = state.em;
+        const heatNorm = Math.max(0, Math.min(1, (em.tempF - 105) / 180));
+        const powerNorm = Math.min(1, em.duty * (state.supplyVolts / 32));
+
+        ctx.save();
+        // Thermal / electromagnetic glow aura
+        const glowAlpha = 0.08 + powerNorm * 0.25 + heatNorm * 0.38;
+        const aura = ctx.createRadialGradient(cx, yTop + h * 0.5, 4, cx, yTop + h * 0.5, w * 0.95);
+        aura.addColorStop(0, "rgba(251, 146, 60, " + glowAlpha.toFixed(2) + ")");
+        aura.addColorStop(0.6, "rgba(239, 68, 68, " + (heatNorm * 0.28).toFixed(2) + ")");
+        aura.addColorStop(1, "rgba(251, 146, 60, 0)");
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(cx, yTop + h * 0.5, w * 0.95, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Iron core protruding slightly
+        ctx.fillStyle = "#64748b";
+        rrect(x + w * 0.16, yTop - 3, w * 0.68, h + 6, 3);
+        ctx.fill();
+
+        // Glossy wound copper body
+        const cGrad = ctx.createLinearGradient(x, yTop, x + w, yTop);
+        cGrad.addColorStop(0, "#7c2d12");
+        cGrad.addColorStop(0.26, "#ea580c");
+        cGrad.addColorStop(0.45, "#fdba74");
+        cGrad.addColorStop(0.75, "#c2410c");
+        cGrad.addColorStop(1, "#5c1d0a");
+        ctx.fillStyle = cGrad;
+        rrect(x, yTop, w, h, 5);
+        ctx.fill();
+
+        // Individual copper wire winding lines
+        ctx.strokeStyle = "rgba(67, 20, 7, 0.52)";
+        ctx.lineWidth = 1.2;
+        for (let wy = yTop + 4; wy < yTop + h - 2; wy += 4.2) {
+          ctx.beginPath();
+          ctx.moveTo(x + 1.5, wy);
+          ctx.lineTo(x + w - 1.5, wy);
+          ctx.stroke();
+        }
+
+        // Bobbin end flanges
+        ctx.fillStyle = "#1e293b";
+        rrect(x - 3, yTop, w + 6, 4, 2);
+        ctx.fill();
+        rrect(x - 3, yTop + h - 4, w + 6, 4, 2);
+        ctx.fill();
+
+        // Hall-Effect Sensor chip + glowing LED on active face
+        const sensorY = isTopCoil ? yTop + h - 1 : yTop - 5;
+        ctx.fillStyle = "#0f172a";
+        rrect(cx - 11, sensorY, 22, 6, 2);
+        ctx.fill();
+
+        const ledColor = !state.pidOn
+          ? "#fbbf24"
+          : em.saturated
+            ? "#fb7185"
+            : "#34d399";
+        const pulse = 0.65 + 0.35 * Math.sin(state.fx.time * (state.pidOn ? 14 : 4));
+        ctx.fillStyle = ledColor;
+        ctx.shadowColor = ledColor;
+        ctx.shadowBlur = 8 * pulse;
+        ctx.beginPath();
+        ctx.arc(cx, sensorY + 3, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.restore();
+      }
+
+      function drawFieldLines(cfg, topFacePx, botFacePx, gx, gy, gr) {
+        const b = state.ball;
+        const isSteel = state.ballType === "steel";
+        const t = state.fx.time;
+
+        // Pole world coordinates on the rotated globe
+        const sinT = Math.sin(b.theta);
+        const cosT = Math.cos(b.theta);
+        const northX = gx + sinT * gr * 0.78;
+        const northY = gy - cosT * gr * 0.78;
+        const southX = gx - sinT * gr * 0.78;
+        const southY = gy + cosT * gr * 0.78;
+
+        ctx.save();
+        ctx.lineWidth = 1.45;
+        ctx.setLineDash([4, 5]);
+        ctx.lineDashOffset = -(t * 26) % 18;
+
+        // Top Magnet Field Lines
+        if (cfg.hasTop) {
+          const strength = Math.min(1, Math.abs(state.forces.topLbs) / 8 + 0.18);
+          const col = cfg.topIsEM
+            ? "rgba(251, 146, 60, " + (0.18 + strength * 0.52).toFixed(2) + ")"
+            : "rgba(56, 189, 248, " + (0.16 + strength * 0.48).toFixed(2) + ")";
+          ctx.strokeStyle = col;
+
+          const targetX = isSteel ? gx : (cosT >= 0 ? northX : southX);
+          const targetY = isSteel ? gy - gr * 0.85 : (cosT >= 0 ? northY : southY);
+          const spreads = [-18, -8, 0, 8, 18];
+          for (let i = 0; i < spreads.length; i++) {
+            const s = spreads[i];
+            ctx.beginPath();
+            ctx.moveTo(originX + s, topFacePx + 1);
+            ctx.quadraticCurveTo(
+              (originX + targetX) * 0.5 + s * 1.3,
+              (topFacePx + targetY) * 0.5,
+              targetX + s * 0.45,
+              targetY
+            );
+            ctx.stroke();
+          }
+        }
+
+        // Bottom Magnet Field Lines
+        if (cfg.hasBot) {
+          const strength = Math.min(1, Math.abs(state.forces.botLbs) / 8 + 0.18);
+          const isRepelling = !isSteel && cosT > 0.15;
+
+          if (isRepelling) {
+            // Compressed flaring repulsion arcs between Bottom S and Ball S
+            ctx.strokeStyle = "rgba(167, 139, 250, " + (0.2 + strength * 0.52).toFixed(2) + ")";
+            const midY = (botFacePx + southY) * 0.5;
+            const spreads = [-16, -7, 7, 16];
+            for (let i = 0; i < spreads.length; i++) {
+              const s = spreads[i];
+              const dir = s < 0 ? -1 : 1;
+              ctx.beginPath();
+              ctx.moveTo(originX + s * 0.7, botFacePx - 1);
+              ctx.quadraticCurveTo(originX + s * 1.2, midY + 5, originX + s * 2.4 + dir * 12, midY + 2);
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.moveTo(southX + s * 0.5, southY);
+              ctx.quadraticCurveTo(southX + s * 1.1, midY - 5, southX + s * 2.2 + dir * 12, midY - 2);
+              ctx.stroke();
+            }
+          } else {
+            // Attractive pull-down lines (Steel ball OR flipped magnet ball!)
+            ctx.strokeStyle = "rgba(251, 113, 133, " + (0.22 + strength * 0.55).toFixed(2) + ")";
+            const targetX = isSteel ? gx : northX;
+            const targetY = isSteel ? gy + gr * 0.85 : northY;
+            const spreads = [-16, -7, 0, 7, 16];
+            for (let i = 0; i < spreads.length; i++) {
+              const s = spreads[i];
+              ctx.beginPath();
+              ctx.moveTo(targetX + s * 0.45, targetY);
+              ctx.quadraticCurveTo(
+                (originX + targetX) * 0.5 + s * 1.25,
+                (botFacePx + targetY) * 0.5,
+                originX + s,
+                botFacePx - 1
+              );
+              ctx.stroke();
+            }
+          }
+        }
+
+        ctx.restore();
+      }
+
+      function drawForceArrow(x, yStart, dyPx, color, label, alignLeft) {
+        if (Math.abs(dyPx) < 8) return;
+        const yEnd = yStart + dyPx;
+        const dir = dyPx > 0 ? 1 : -1;
+        const head = 7;
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2.6;
+        ctx.lineCap = "round";
+
+        ctx.beginPath();
+        ctx.moveTo(x, yStart);
+        ctx.lineTo(x, yEnd);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x, yEnd);
+        ctx.lineTo(x - 5.5, yEnd - dir * head);
+        ctx.lineTo(x + 5.5, yEnd - dir * head);
+        ctx.closePath();
+        ctx.fill();
+
+        if (label) {
+          ctx.font = "800 10px " + getComputedStyle(document.body).fontFamily;
+          const tw = ctx.measureText(label).width;
+          const bw = tw + 10;
+          const bh = 17;
+          let lx = alignLeft ? x - bw - 6 : x + 6;
+          lx = Math.max(6, Math.min(cw - bw - 6, lx));
+          const ly = Math.max(36, Math.min(ch - bh - 8, (yStart + yEnd) * 0.5 - bh * 0.5));
+
+          ctx.fillStyle = "rgba(8, 13, 24, 0.88)";
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          rrect(lx, ly, bw, bh, 5);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, lx + bw * 0.5, ly + bh * 0.5 + 0.5);
+        }
+        ctx.restore();
+      }
+
+      function renderCanvas() {
+        const b = state.ball;
+        const fx = state.fx;
+        const cfg = getActiveMagnetConfig();
+        const isSteel = state.ballType === "steel";
+        const gapM = state.gapIn * IN_TO_M;
+
+        const topFacePx = mToPxY(-(BALL_R_M + gapM));
+        const botFacePx = mToPxY(+(BALL_R_M + gapM));
+        const ballR = BALL_R_IN * pxPerIn;
+        const gx = mToPxX(b.x);
+        const gy = mToPxY(b.y);
+
+        // Magnet rendered physical size scales genuinely with Magnet Size slider!
+        const topDiamIn = cfg.topIsEM ? EM_CORE_DIAM_IN : state.magDiamIn;
+        const botDiamIn = cfg.botIsEM ? EM_CORE_DIAM_IN : state.magDiamIn;
+        const topW = Math.max(16, Math.min(cw * 0.44, topDiamIn * pxPerIn));
+        const topH = Math.max(15, Math.min(48, topDiamIn * pxPerIn * 0.68));
+        const botW = Math.max(16, Math.min(cw * 0.44, botDiamIn * pxPerIn));
+        const botH = Math.max(15, Math.min(46, botDiamIn * pxPerIn * 0.66));
+
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.save();
+
+        // Impact screen shake
+        if (fx.shake > 0.1) {
+          ctx.translate((Math.random() - 0.5) * fx.shake, (Math.random() - 0.5) * fx.shake);
+        }
+
+        // 1. Workshop Precision Grid
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.045)";
+        ctx.lineWidth = 1;
+        const step = pxPerIn * 0.5;
+        for (let x = originX % step; x < cw; x += step) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke();
+        }
+        for (let y = originY % step; y < ch; y += step) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
+        }
+
+        // Target Hover Centerline & Crosshair
+        ctx.save();
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.14)";
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(originX, topFacePx);
+        ctx.lineTo(originX, botFacePx);
+        ctx.stroke();
+
+        // Target hover height marker ring
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.22)";
+        ctx.beginPath();
+        ctx.arc(originX, originY, ballR + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Brushed Dark-Aluminum C-Frame Stand
+        const spinePx = Math.max(18, mToPxX(SPINE_X_IN * IN_TO_M));
+        const armTopY = Math.max(20, topFacePx - topH - 7);
+        const armBotY = Math.min(ch - 14, botFacePx + (cfg.hasBot ? botH : 8) + 7);
+
+        ctx.save();
+        const frameGrad = ctx.createLinearGradient(spinePx - 10, armTopY, spinePx + 14, armBotY);
+        frameGrad.addColorStop(0, "#475569");
+        frameGrad.addColorStop(0.5, "#263449");
+        frameGrad.addColorStop(1, "#1e293b");
+
+        ctx.strokeStyle = frameGrad;
+        ctx.lineWidth = Math.max(12, Math.min(18, pxPerIn * 0.36));
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(originX + topW * 0.48, armTopY);
+        ctx.lineTo(spinePx + 20, armTopY);
+        ctx.quadraticCurveTo(spinePx, armTopY, spinePx, armTopY + 24);
+        ctx.lineTo(spinePx, armBotY - 24);
+        ctx.quadraticCurveTo(spinePx, armBotY, spinePx + 20, armBotY);
+        ctx.lineTo(Math.min(cw - 12, originX + ballR * 1.85), armBotY);
+        ctx.stroke();
+
+        // Machined highlight bevel on C-frame
+        ctx.strokeStyle = "rgba(226, 232, 240, 0.2)";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Base landing pad platform (under bottom surface)
+        const baseY = cfg.hasBot ? botFacePx + botH : botFacePx;
+        ctx.fillStyle = "#1e293b";
+        rrect(spinePx + 14, baseY, Math.min(cw - spinePx - 22, (RIGHT_WALL_X_IN - SPINE_X_IN) * pxPerIn), 10, 4);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Dynamic Live Magnetic Field Lines
+        drawFieldLines(cfg, topFacePx, botFacePx, gx, gy, ballR);
+
+        // 4. Top Magnet / Electromagnet
+        if (cfg.hasTop) {
+          if (cfg.topIsEM) {
+            drawElectromagnetCoil(originX, topFacePx - topH, topW, topH, true);
+          } else {
+            drawCylinderMagnet(originX, topFacePx - topH, topW, topH, "N", "S");
+          }
+        } else {
+          // Empty top bumper collar
+          ctx.fillStyle = "rgba(51, 65, 85, 0.7)";
+          rrect(originX - 24, topFacePx - 6, 48, 6, 3);
+          ctx.fill();
+        }
+
+        // 5. Bottom Magnet / Electromagnet
+        if (cfg.hasBot) {
+          if (cfg.botIsEM) {
+            drawElectromagnetCoil(originX, botFacePx, botW, botH, false);
+          } else {
+            // S on top to repel the upright ball's bottom S pole
+            drawCylinderMagnet(originX, botFacePx, botW, botH, "S", "N");
+          }
+        }
+
+        // 6. Air-Gap Dimension Ruler (right next to the air gap)
+        const rulerX = originX - ballR - Math.max(14, pxPerIn * 0.42);
+        if (originY - ballR - topFacePx >= 10) {
+          ctx.save();
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.72)";
+          ctx.lineWidth = 1.25;
+          ctx.beginPath();
+          ctx.moveTo(rulerX, topFacePx + 1);
+          ctx.lineTo(rulerX, originY - ballR - 1);
+          ctx.moveTo(rulerX - 4, topFacePx + 1);
+          ctx.lineTo(rulerX + 4, topFacePx + 1);
+          ctx.moveTo(rulerX - 4, originY - ballR - 1);
+          ctx.lineTo(rulerX + 4, originY - ballR - 1);
+          ctx.stroke();
+
+          const gapLabel = state.gapIn.toFixed(2) + '"';
+          ctx.font = "800 10px " + getComputedStyle(document.body).fontFamily;
+          const tw = ctx.measureText(gapLabel).width + 8;
+          const midY = (topFacePx + originY - ballR) * 0.5;
+          const lx = Math.max(spinePx + 10, rulerX - tw - 5);
+          ctx.fillStyle = "rgba(8, 13, 24, 0.88)";
+          rrect(lx, midY - 8.5, tw, 17, 4);
+          ctx.fill();
+          ctx.fillStyle = "#bae6fd";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(gapLabel, lx + tw * 0.5, midY + 0.5);
+          ctx.restore();
+        }
+
+        // 7. Realistic Baseball-Sized Globe (2.9" diameter, rotating with theta!)
+        const mat = getBallMaterialSpec(state.weightLbs);
+        ctx.save();
+        ctx.translate(gx, gy);
+
+        // Grab halo when dragging
+        if (b.dragging) {
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.78)";
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.arc(0, 0, ballR + 8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        ctx.rotate(b.theta);
+
+        // 3D Spherical Shading matching Weight Material (Wood -> Aluminum -> Steel -> Brass -> Lead)
+        const sGrad = ctx.createRadialGradient(-ballR * 0.34, -ballR * 0.36, ballR * 0.08, 0, 0, ballR);
+        sGrad.addColorStop(0, mat.c1);
+        sGrad.addColorStop(0.55, mat.c2);
+        sGrad.addColorStop(1, mat.c3);
+        ctx.fillStyle = sGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, ballR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subtle globe meridian & equator lines so rotation is unmistakably visible
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ballR, ballR * 0.28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ballR * 0.36, ballR, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Cutaway Core Inside the Globe
+        if (isSteel) {
+          const coreR = ballR * 0.54;
+          const stGrad = ctx.createLinearGradient(-coreR, -coreR, coreR, coreR);
+          stGrad.addColorStop(0, "#f1f5f9");
+          stGrad.addColorStop(0.5, "#64748b");
+          stGrad.addColorStop(1, "#cbd5e1");
+          ctx.fillStyle = stGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(15,23,42,0.65)";
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+
+          ctx.font = "800 " + Math.max(8, Math.round(ballR * 0.24)) + "px " + getComputedStyle(document.body).fontFamily;
+          ctx.fillStyle = "#0f172a";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("STEEL", 0, 0.5);
+        } else {
+          // Embedded N/S permanent magnet inside the globe
+          const imW = ballR * 0.62;
+          const imH = ballR * 1.08;
+          drawCylinderMagnet(0, -imH * 0.5, imW, imH, "N", "S");
+        }
+
+        // Outer glossy sphere specular rim
+        ctx.strokeStyle = mat.rim;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(0, 0, ballR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // 8. Metallic Impact Spark Particles
+        for (let i = 0; i < fx.particles.length; i++) {
+          const p = fx.particles[i];
+          const a = Math.max(0, p.life / p.maxLife);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = a;
+          ctx.beginPath();
+          ctx.arc(mToPxX(p.x), mToPxY(p.y), 2.3 * a + 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // 9. Live Labeled Force Arrows in lbs right on the Globe
+        const f = state.forces;
+        const maxArrowPx = Math.min(62, ch * 0.16);
+        const arrowScale = maxArrowPx / 10.0; // 10 lbs -> full arrow
+
+        // Gravity arrow (Left of globe, pointing down)
+        const gravLen = Math.max(14, Math.min(maxArrowPx, f.gravityLbs * arrowScale));
+        drawForceArrow(
+          gx - ballR - 8,
+          gy + 2,
+          gravLen,
+          "#fbbf24",
+          "Gravity " + fmtLb(f.gravityLbs) + " ↓",
+          true
+        );
+
+        // Top Magnet Force arrow (Right-top of globe)
+        if (cfg.hasTop && Math.abs(f.topLbs) > 0.05) {
+          const tLen = Math.max(14, Math.min(maxArrowPx, Math.abs(f.topLbs) * arrowScale));
+          const up = f.topLbs < 0;
+          drawForceArrow(
+            gx + ballR + 8,
+            gy - 4,
+            up ? -tLen : tLen,
+            cfg.topIsEM ? "#fb923c" : "#38bdf8",
+            (up ? "Pull " : "Push ") + fmtLb(f.topLbs) + (up ? " ↑" : " ↓"),
+            false
+          );
+        }
+
+        // Bottom Magnet Force arrow (Right-bottom of globe)
+        if (cfg.hasBot && Math.abs(f.botLbs) > 0.05) {
+          const bLen = Math.max(14, Math.min(maxArrowPx, Math.abs(f.botLbs) * arrowScale));
+          const up = f.botLbs < 0;
+          drawForceArrow(
+            gx + ballR + 8,
+            gy + 12,
+            up ? -bLen : bLen,
+            up ? "#a78bfa" : "#fb7185",
+            (up ? "Push " : "Pull ") + fmtLb(f.botLbs) + (up ? " ↑" : " ↓"),
+            false
+          );
+        }
+
+        // 10. Crisp Top-Center On-Canvas Status Pill
+        const pillText = fx.statusText;
+        ctx.save();
+        ctx.font = "800 " + (cw < 330 ? "10px " : "11px ") + getComputedStyle(document.body).fontFamily;
+        const tw = ctx.measureText(pillText).width;
+        const pw = Math.min(cw - 16, tw + 22);
+        const ph = 24;
+        const px = (cw - pw) * 0.5;
+        const py = 8;
+
+        const pillStyles = {
+          ok:     { bg: "rgba(6, 78, 59, 0.90)",  bd: "#34d399", fg: "#a7f3d0" },
+          warn:   { bg: "rgba(120, 53, 15, 0.90)", bd: "#fbbf24", fg: "#fef3c7" },
+          danger: { bg: "rgba(136, 19, 55, 0.92)", bd: "#fb7185", fg: "#ffe4e6" },
+          info:   { bg: "rgba(12, 74, 110, 0.90)", bd: "#38bdf8", fg: "#e0f2fe" }
+        };
+        const st = pillStyles[fx.statusKind] || pillStyles.info;
+
+        ctx.fillStyle = st.bg;
+        ctx.strokeStyle = st.bd;
+        ctx.lineWidth = 1.4;
+        rrect(px, py, pw, ph, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = st.fg;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(pillText, cw * 0.5, py + ph * 0.5 + 0.5, pw - 12);
+        ctx.restore();
+
+        ctx.restore();
+      }
+
+      /* =======================================================================
+         SIMULATION ACTIONS & INTERACTIVE CONTROLS
+         ======================================================================= */
+      function resetBall(keepHeldInRegular) {
+        const b = state.ball;
+        b.x = 0;
+        b.y = 0;
+        b.vx = 0;
+        b.vy = 0;
+        b.theta = 0;
+        b.omega = 0;
+        b.dragging = false;
+        b.held = keepHeldInRegular && (state.magType === "regular");
+        state.em.pidIntegral = 0;
+        state.fx.impactTimer = 0;
+        state.fx.lastImpactMsg = "";
+        state.fx.lastImpactMph = 0;
+        state.fx.particles = [];
+      }
+
+      function dropAndTest() {
+        const b = state.ball;
+        b.held = false;
+        b.dragging = false;
+        state.fx.impactTimer = 0;
+
+        // Add tiny realistic hand-release imperfection so Earnshaw's Theorem triggers honestly
+        state.fx.altDropUp = !state.fx.altDropUp;
+        if (state.layout === "top" && state.magType === "regular") {
+          // Alternate slight + / - micro-offset so user can observe both SNAP UP and DROP DOWN
+          b.y = (state.fx.altDropUp ? -0.025 : 0.025) * IN_TO_M;
+          b.x = (Math.random() - 0.5) * 0.03 * IN_TO_M;
+          b.theta = (Math.random() - 0.5) * 0.04;
+        } else {
+          b.y = (Math.random() - 0.5) * 0.02 * IN_TO_M;
+          b.x = (state.fx.altDropUp ? 0.04 : -0.04) * IN_TO_M;
+          b.theta = (state.fx.altDropUp ? 0.045 : -0.045);
+        }
+      }
+
+      function nudgeBall() {
+        const b = state.ball;
+        if (b.held) b.held = false;
+        // Realistic finger tap impulse
+        b.vy += (Math.random() > 0.35 ? 0.42 : -0.35);
+        b.vx += (Math.random() > 0.5 ? 1 : -1) * 0.28;
+        b.omega += (Math.random() > 0.5 ? 1 : -1) * 2.2;
+      }
+
+      function autoSizeMagnet() {
+        computeEquilibriumRequirements();
+        const clamped = Math.max(0.40, Math.min(3.00, Math.round(state.req.neededDiamIn * 20) / 20));
+        state.magDiamIn = clamped;
+        resetBall(true);
+        updateStaticReadouts();
+      }
+
+      function autoVoltage() {
+        computeEquilibriumRequirements();
+        // Give ~35% headroom above steady hover voltage so PID can catch nudges cleanly
+        const ideal = Math.min(48, Math.max(4, Math.ceil((state.req.neededVolts * 1.45) * 2) / 2));
+        state.supplyVolts = ideal;
+        if (state.ball.held) state.ball.held = false;
+        resetBall(false);
+        updateStaticReadouts();
+      }
+
+      /* =======================================================================
+         CUSTOM TOUCH-FRIENDLY VERTICAL SLIDER CONTROLLER
+         ======================================================================= */
+      function bindVerticalSlider(sliderEl, min, max, step, onChange) {
+        let activePointer = null;
+
+        function updateFromClientY(clientY) {
+          const rect = sliderEl.getBoundingClientRect();
+          const pad = 10;
+          const top = rect.top + pad;
+          const height = Math.max(10, rect.height - pad * 2);
+          const norm = 1 - (clientY - top) / height; // bottom = 0, top = 1
+          const clamped = Math.max(0, Math.min(1, norm));
+          const raw = min + clamped * (max - min);
+          const stepped = Math.round(raw / step) * step;
+          const finalVal = Math.max(min, Math.min(max, +stepped.toFixed(4)));
+          onChange(finalVal);
+        }
+
+        sliderEl.addEventListener("pointerdown", function (e) {
+          e.preventDefault();
+          activePointer = e.pointerId;
+          sliderEl.setPointerCapture(e.pointerId);
+          sliderEl.classList.add("dragging");
+          updateFromClientY(e.clientY);
+        });
+
+        sliderEl.addEventListener("pointermove", function (e) {
+          if (activePointer !== e.pointerId) return;
+          e.preventDefault();
+          updateFromClientY(e.clientY);
+        });
+
+        function endDrag(e) {
+          if (activePointer !== e.pointerId) return;
+          activePointer = null;
+          sliderEl.classList.remove("dragging");
+        }
+        sliderEl.addEventListener("pointerup", endDrag);
+        sliderEl.addEventListener("pointercancel", endDrag);
+
+        // Keyboard accessibility
+        sliderEl.addEventListener("keydown", function (e) {
+          const cur = parseFloat(sliderEl.getAttribute("aria-valuenow")) || min;
+          if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+            e.preventDefault();
+            onChange(Math.min(max, +(cur + step).toFixed(4)));
+          } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            onChange(Math.max(min, +(cur - step).toFixed(4)));
+          }
+        });
+      }
+
+      /* =======================================================================
+         DIRECT CANVAS POINTER DRAG & TOSS (Mouse + Mobile Touch)
+         ======================================================================= */
+      function bindCanvasPointer() {
+        let dragPointerId = null;
+
+        function getLocalCoords(e) {
+          const rect = el.canvas.getBoundingClientRect();
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        el.canvas.addEventListener("pointerdown", function (e) {
+          const pt = getLocalCoords(e);
+          const gx = mToPxX(state.ball.x);
+          const gy = mToPxY(state.ball.y);
+          const ballR = BALL_R_IN * pxPerIn;
+          const dist = Math.hypot(pt.x - gx, pt.y - gy);
+
+          // Generous touch hitbox (ball radius + 24px)
+          if (dist <= ballR + 28) {
+            e.preventDefault();
+            dragPointerId = e.pointerId;
+            el.canvas.setPointerCapture(e.pointerId);
+            el.canvas.classList.add("grabbing");
+
+            const b = state.ball;
+            b.held = false;
+            b.dragging = true;
+            b.dragTargetX = pxToMX(pt.x);
+            b.dragTargetY = pxToMY(pt.y);
+            state.fx.impactTimer = 0;
+          }
+        });
+
+        el.canvas.addEventListener("pointermove", function (e) {
+          if (dragPointerId !== e.pointerId) return;
+          e.preventDefault();
+          const pt = getLocalCoords(e);
+          state.ball.dragTargetX = pxToMX(pt.x);
+          state.ball.dragTargetY = pxToMY(pt.y);
+        });
+
+        function releaseBall(e) {
+          if (dragPointerId !== e.pointerId) return;
+          dragPointerId = null;
+          el.canvas.classList.remove("grabbing");
+          state.ball.dragging = false;
+          // Slight natural damping on toss so it stays controllable
+          state.ball.vx *= 0.65;
+          state.ball.vy *= 0.65;
+        }
+
+        el.canvas.addEventListener("pointerup", releaseBall);
+        el.canvas.addEventListener("pointercancel", releaseBall);
+      }
+
+      /* =======================================================================
+         BIND ALL EVENTS & MAIN 60FPS / 240HZ SUB-STEP LOOP
+         ======================================================================= */
+      function bindEvents() {
+        // Segmented toggles in Top Strip
+        document.querySelectorAll(".seg-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            const grp = btn.getAttribute("data-group");
+            const val = btn.getAttribute("data-val");
+            if (state[grp] === val) return;
+            state[grp] = val;
+
+            document.querySelectorAll('.seg-btn[data-group="' + grp + '"]').forEach(function (b) {
+              b.classList.remove("active", "active-em");
+              if (b === btn) {
+                b.classList.add(grp === "magType" && val === "electromagnet" ? "active-em" : "active");
+              }
+            });
+
+            // When switching into Electromagnet mode with PID ON, start live hovering!
+            resetBall(state.magType === "regular");
+            updateStaticReadouts();
+          });
+        });
+
+        // Quick action buttons
+        el.btnDrop.addEventListener("click", dropAndTest);
+        el.btnNudge.addEventListener("click", nudgeBall);
+        el.btnReset.addEventListener("click", function () {
+          resetBall(state.magType === "regular");
+          updateStaticReadouts();
+        });
+        el.btnPid.addEventListener("click", function () {
+          state.pidOn = !state.pidOn;
+          if (!state.pidOn) {
+            // Turning off Brain immediately puts ball in free physics under manual voltage
+            state.ball.held = false;
+            state.ball.y += 0.0006;
+          } else {
+            state.em.pidIntegral = 0;
+          }
+          updateStaticReadouts();
+        });
+
+        // Left vertical slider: BALL WEIGHT (0.5 .. 10.0 lb)
+        bindVerticalSlider(el.sliderWeight, 0.5, 10.0, 0.25, function (val) {
+          state.weightLbs = val;
+          updateStaticReadouts();
+        });
+
+        // Right vertical slider: GAP / HEIGHT (0.25 .. 2.00 in)
+        bindVerticalSlider(el.sliderGap, 0.25, 2.00, 0.05, function (val) {
+          state.gapIn = val;
+          updateStaticReadouts();
+        });
+
+        // Bottom slider: Magnet Size (Regular mode)
+        el.rangeMagSize.addEventListener("input", function () {
+          state.magDiamIn = parseFloat(el.rangeMagSize.value);
+          updateStaticReadouts();
+        });
+        el.btnAutoSize.addEventListener("click", autoSizeMagnet);
+
+        // Bottom slider: Supply Voltage (Electromagnet mode)
+        el.rangeVoltage.addEventListener("input", function () {
+          state.supplyVolts = parseFloat(el.rangeVoltage.value);
+          updateStaticReadouts();
+        });
+        el.btnAutoVolt.addEventListener("click", autoVoltage);
+
+        bindCanvasPointer();
+
+        window.addEventListener("resize", resizeCanvas);
+        if (typeof ResizeObserver !== "undefined") {
+          new ResizeObserver(resizeCanvas).observe(el.canvasStage);
+        }
+      }
+
+      let lastTime = 0;
+      let uiAccum = 0;
+
+      function mainLoop(ts) {
+        if (!lastTime) lastTime = ts;
+        const frameDt = Math.min(0.033, Math.max(0.004, (ts - lastTime) / 1000));
+        lastTime = ts;
+
+        state.fx.time += frameDt;
+        if (state.fx.impactTimer > 0) state.fx.impactTimer = Math.max(0, state.fx.impactTimer - frameDt);
+        if (state.fx.shake > 0) state.fx.shake *= Math.exp(-14 * frameDt);
+
+        // Update spark particles
+        for (let i = state.fx.particles.length - 1; i >= 0; i--) {
+          const p = state.fx.particles[i];
+          p.life -= frameDt;
+          if (p.life <= 0) {
+            state.fx.particles.splice(i, 1);
+          } else {
+            p.vy += G_ACCEL * 0.45 * frameDt;
+            p.x += p.vx * frameDt;
+            p.y += p.vy * frameDt;
+          }
+        }
+
+        // 4 sub-steps per frame (~240Hz rigid-body & RL coil integration)
+        const SUBSTEPS = 4;
+        const subDt = frameDt / SUBSTEPS;
+        for (let s = 0; s < SUBSTEPS; s++) {
+          stepPhysicsSubstep(subDt);
+        }
+
+        updateLiveStatus();
+        renderCanvas();
+
+        // Throttle DOM telemetry updates to ~15Hz for crisp readability & battery efficiency
+        uiAccum += frameDt;
+        if (uiAccum >= 0.065) {
+          uiAccum = 0;
+          updateLiveTelemetryUI();
+        }
+
+        window.requestAnimationFrame(mainLoop);
+      }
+
+      window.onload = function () {
+        try {
+          bindEvents();
+          resizeCanvas();
+          // Start with exact auto-sized walnut magnet for 5.0 lb @ 0.75" gap
+          autoSizeMagnet();
+          updateLiveTelemetryUI();
+          window.requestAnimationFrame(mainLoop);
+        } catch (err) {
+          console.error("Initialization error:", err);
+        }
+      };
+    })();
+  </script>
+</body>
+</html>
